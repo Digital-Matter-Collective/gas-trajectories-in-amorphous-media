@@ -236,9 +236,9 @@ Repeat `--index` (or use a comma-separated value) to process several explicit
 steps. Without `--index`, all available structures are processed.
 
 `gas-traj-binarize-structures`'s `--num-workers` and `--ref-size` combine
-non-trivially into peak memory — see §15 before raising either on a large
-structure; if the process is OOM-killed, lower `--num-workers` and/or
-`--atom-chunk` rather than assuming the run needs more RAM than it does.
+into peak memory — see §15 before raising either on a large structure; if
+the process is OOM-killed, lower `--num-workers` rather than assuming the
+run needs more RAM than it does.
 
 ## 4. Pore-network boundary
 
@@ -837,25 +837,21 @@ Per-command notes:
   cores); pass a smaller value to leave headroom on a shared machine.
 - `gas-traj-binarize-structures` (§3, `binarization_structs.py`) defaults to
   `--num-workers 4` and drives `Segmentator.binarize` in
-  `processes/segmentation.py` with the `PROCESS_CHUNK` algorithm: each worker
-  is a separate OS process, initialized once with the structure's atom
-  bounding boxes (sized by atom count, not by `--ref-size`). That one-time
-  broadcast is cheap, but raising `--num-workers` *does* roughly multiply
-  peak memory, because each worker computes one image slice at a time via
-  `scipy.spatial.distance.cdist(pos_in, atoms_in_chunk)` — a dense
-  `len(pos_in) × --atom-chunk` `float64` matrix, and `len(pos_in)` can be up
-  to the full slice cross-section (`Ny·Nz`, roughly `--ref-size²`) when a
-  structure's atoms span most of a bounding-box partition. With `N` workers
-  computing slices concurrently, peak resident memory is on the order of
-  `N × ref_size² × atom_chunk × 9` bytes (the `float64` distance matrix plus
-  its boolean comparison result) — quadratic in `--ref-size`, not the
-  `--ref-size³ × 1 byte` a glance at the output image's shape/dtype would
-  suggest. `--atom-chunk` (default `1024`) trades this off directly: halving
-  it roughly halves peak memory per worker at some CPU cost, independent of
-  `--num-workers`. If a run is OOM-killed, lower `--num-workers` first
-  (linear effect on peak memory) and/or `--atom-chunk` for large
-  `--ref-size`. `gas-traj-distance-maps` (`distance_map_structs.py`) runs
-  single-threaded.
+  `processes/segmentation.py` with the `PROCESS_CHUNK` algorithm: each
+  worker is a separate OS process. Per-slice work is a `scipy.spatial.
+  cKDTree.query(..., k=1, distance_upper_bound=radius)` — one vectorized,
+  O(log N_atoms) nearest-neighbor query per distinct atom radius (typically
+  a handful, grouped by `_build_radius_trees`), not a brute-force distance
+  scan against every atom. The trees are built once and broadcast to every
+  worker at process start; that broadcast, plus the per-slice query-result
+  arrays (`O(Ny·Nz)`, a few MB even at large `--ref-size`), are small and
+  roughly constant regardless of atom count. Raising `--num-workers` mostly
+  costs the fixed per-process baseline (interpreter + imported libraries,
+  very roughly ~100-300 MB each) rather than multiplying a per-slice
+  working set — there is no longer an `--atom-chunk`-style memory/speed
+  knob to tune. If a run is OOM-killed, lower `--num-workers`.
+  `gas-traj-distance-maps` (`distance_map_structs.py`) uses the same
+  `cKDTree` approach (single-threaded; see `Segmentator.dist_map`).
 - `corrfunc_struct_plotter.py` (§11) defaults to `--num-workers 4` and uses a
   `ThreadPoolExecutor`. It reads each binary image once and keeps the
   trajectory bit-packed in RAM before computing intersections with hardware

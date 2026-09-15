@@ -414,5 +414,4 @@ def build_segmentator(
         img_size,
         size_data=get_size,
         radius_extention=get_ext_size,
-        partitioning=2,
     )

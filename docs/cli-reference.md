@@ -68,7 +68,6 @@ Installed command: `gas-traj-binarize-structures`.
 | `--ref-size N` | required | Voxel count along the shortest side of the cropped bounding box. It determines spatial resolution and has roughly quadratic influence on per-slice working memory. |
 | `--dev FLOAT` | `2.0` | Cell-cropping divisor passed to `Segmentator.cut_cell`; larger values retain a smaller central box. |
 | `--num-workers N` | `4` | Number of worker processes used to binarize slices. More workers increase both concurrency and peak memory. |
-| `--atom-chunk N` | `1024` | Atoms per pairwise-distance batch in each worker. Lower values reduce peak memory at some CPU cost. |
 
 Every extracted structure `.npz` file in `structures_dir` is processed.
 
