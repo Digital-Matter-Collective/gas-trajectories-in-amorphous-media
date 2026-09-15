@@ -881,7 +881,7 @@ def analysis(
 
     for step, file in sorted_lfiles:
         radiuses, throat_lengths = Reader.read_pnm_data(
-            join(path_to_pnms, file[:-10]), border=0.015
+            join(path_to_pnms, file[:-10]), border=0.025
         )
         time = step_time_mapping.time_ps(step)
 

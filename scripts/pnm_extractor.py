@@ -111,4 +111,4 @@ if __name__ == '__main__':
             break
         else:
             kprint(f"Sucssess: {pnm_pref}")
-            kprint(f"Ready index = {i+1} from {len(onlyfiles)}")
+            kprint(f"Ready index = {i + 1} from {len(onlyfiles)}")
