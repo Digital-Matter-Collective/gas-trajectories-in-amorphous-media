@@ -48,11 +48,12 @@ Installed command: `gas-traj-extract-structures`.
 |---|---|---|
 | `input` | required | Input multi-frame GRO trajectory. |
 | `output_dir` | required | Directory for extracted `struct-num=..._time-ps=....npz` structures; it is created if needed. |
-| `--index STEP` | selection required unless `--auto-indexes`; repeatable | Extract a simulation step. One occurrence may contain comma- or whitespace-separated steps. A request for the first trajectory frame is ignored. |
+| `--index STEP` | selection required unless `--auto-indexes`; repeatable | Extract a simulation step. One occurrence may contain comma- or whitespace-separated steps. A request for the first trajectory frame is dropped unless `--include-first-step` is passed. |
 | `--indexes-file FILE` | selection required unless `--auto-indexes` | Text file containing comma- or whitespace-separated simulation steps. It may be combined with `--index`. |
-| `--auto-indexes` | off | Read available steps from the GRO headers, always exclude the first frame, and select the requested structures. Mutually exclusive with `--index`/`--indexes-file`. |
-| `--mode {all,part}` | `all` | With `--auto-indexes`, `all` spreads steps from the second available frame through the last, including both endpoints; `part` takes frames consecutively beginning with the second. |
-| `--count-structures N` | required with `--auto-indexes` | Number of structures requested. Fewer are returned only if fewer frames remain after excluding the first. |
+| `--auto-indexes` | off | Read available steps from the GRO headers, exclude the first frame unless `--include-first-step` is passed, and select the requested structures. Mutually exclusive with `--index`/`--indexes-file`. |
+| `--include-first-step` | off | Extract the very first trajectory frame too, instead of dropping it. It precedes equilibration, so downstream PNM/structure-derived analyses (including `gas-traj-stationarity`) expect it to be absent. |
+| `--mode {all,part}` | `all` | With `--auto-indexes`, `all` spreads steps from the first eligible frame through the last, including both endpoints; `part` takes frames consecutively beginning with the first eligible one. |
+| `--count-structures N` | required with `--auto-indexes` | Number of structures requested. Fewer are returned only if fewer eligible frames are available. |
 | `--slice-len N` | `100` | Number of requested structures read in one batch; affects I/O batching, not the selected set. |
 | `--dry-run` | off | Print the generated/explicit indexes without extracting structures. |
 

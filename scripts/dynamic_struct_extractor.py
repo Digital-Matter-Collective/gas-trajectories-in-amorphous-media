@@ -62,7 +62,11 @@ def build_indexes_from_args(args: argparse.Namespace) -> list[int]:
         if len(set(info.available_steps)) != len(info.available_steps):
             raise ValueError("Trajectory frame step numbers must be unique")
 
-        eligible_steps = info.available_steps[1:]
+        eligible_steps = (
+            info.available_steps
+            if args.include_first_step
+            else info.available_steps[1:]
+        )
         indexes = select_indexes_from_available(
             eligible_steps,
             count=args.count_structures,
@@ -70,7 +74,8 @@ def build_indexes_from_args(args: argparse.Namespace) -> list[int]:
         )
         kprint(
             "Trajectory info: "
-            f"skipped_first_step={info.start_step}, "
+            f"first_available_step={info.start_step}, "
+            f"first_step_included={args.include_first_step}, "
             f"first_selected_step={indexes[0]}, "
             f"last_selected_step={indexes[-1]}, "
             f"frame_count={info.frame_count}"
@@ -79,6 +84,8 @@ def build_indexes_from_args(args: argparse.Namespace) -> list[int]:
         return indexes
 
     indexes = collect_indexes(args.index, args.indexes_file)
+    if args.include_first_step:
+        return indexes
     first_step = scan_gro_trajectory_info(
         args.input, count_all_frames=False
     ).start_step
@@ -86,7 +93,10 @@ def build_indexes_from_args(args: argparse.Namespace) -> list[int]:
     if len(filtered_indexes) != len(indexes):
         kprint(f"Skipping first trajectory frame with step={first_step}")
     if not filtered_indexes:
-        raise ValueError("The first trajectory frame cannot be extracted")
+        raise ValueError(
+            "The first trajectory frame cannot be extracted "
+            "(pass --include-first-step to allow it)"
+        )
     return filtered_indexes
 
 
@@ -105,7 +115,8 @@ def main() -> None:
         default=[],
         help=(
             "Structure step number. Can be repeated or comma-separated; "
-            "the first trajectory frame is always ignored."
+            "the first trajectory frame is skipped unless "
+            "--include-first-step is passed."
         ),
     )
     parser.add_argument(
@@ -118,7 +129,18 @@ def main() -> None:
         action="store_true",
         help=(
             "Read available steps from trajectory headers, skip the first "
-            "frame, and select indexes by mode/count."
+            "frame unless --include-first-step is passed, and select "
+            "indexes by mode/count."
+        ),
+    )
+    parser.add_argument(
+        "--include-first-step",
+        action="store_true",
+        help=(
+            "Extract the very first trajectory frame too. Off by default: "
+            "it precedes equilibration and is not a valid stationarity "
+            "baseline, so downstream PNM/structure-derived analyses "
+            "(including gas-traj-stationarity) expect it to be absent."
         ),
     )
     parser.add_argument(

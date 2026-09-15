@@ -18,16 +18,27 @@ def _zero_extension(type_id: int) -> float:
     return 0.0
 
 
-def _make_segmentator(img_size: tuple[int, int, int] = (10, 10, 10)) -> Segmentator:
+def _make_segmentator(
+    img_size: tuple[int, int, int] = (10, 10, 10)
+) -> Segmentator:
     box = BoundingBox(Range(0.0, 2.0), Range(0.0, 2.0), Range(0.0, 2.0))
     atoms = [
-        AtomData(0, "KRG", "C0", 0, np.array([1.0, 1.0, 1.0], dtype=np.float32)),
-        AtomData(1, "KRG", "C1", 1, np.array([1.0, 1.0, 1.8], dtype=np.float32)),
-        AtomData(2, "KRG", "C2", 1, np.array([0.2, 0.2, 0.2], dtype=np.float32)),
+        AtomData(
+            0, "KRG", "C0", 0, np.array([1.0, 1.0, 1.0], dtype=np.float32)
+        ),
+        AtomData(
+            1, "KRG", "C1", 1, np.array([1.0, 1.0, 1.8], dtype=np.float32)
+        ),
+        AtomData(
+            2, "KRG", "C2", 1, np.array([0.2, 0.2, 0.2], dtype=np.float32)
+        ),
     ]
     kerogen = KerogenData(None, atoms, box)
     return Segmentator(
-        kerogen, img_size, size_data=_size_data, radius_extention=_zero_extension
+        kerogen,
+        img_size,
+        size_data=_size_data,
+        radius_extention=_zero_extension,
     )
 
 
