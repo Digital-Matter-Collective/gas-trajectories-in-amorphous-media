@@ -198,29 +198,30 @@ gas-traj-binarize-structures \
   "$DATA_DIR/structures" \
   "$DATA_DIR/bin_images" \
   "$DATA_DIR/raw_images" \
-  --ref-size 250 --num-workers 10
+  --ref-size 300 --num-workers 10
 
 gas-traj-distance-maps \
-  "$DATA_DIR/structures" "$DATA_DIR" \
-  --ref-size 250
+  "$DATA_DIR/structures" "$DATA_DIR/float_images" \
+  --ref-size 300
 
 # Without installing the package:
 python -m scripts.binarization_structs \
   "$DATA_DIR/structures" \
   "$DATA_DIR/bin_images" \
   "$DATA_DIR/raw_images" \
-  --ref-size 250 --num-workers 10
+  --ref-size 300 --num-workers 10
 
 python -m scripts.distance_map_structs \
-  "$DATA_DIR/structures" "$DATA_DIR" \
-  --ref-size 250
+  "$DATA_DIR/structures" "$DATA_DIR/float_images" \
+  --ref-size 300
 ```
 
 The first command writes `.npy` binary volumes and matching headerless
-`.raw` volumes. The second writes `.npy` arrays under
-`$DATA_DIR/float_images`. Image resolution and cropping are controlled by
-`--ref-size` and `--dev`; preserve those values with final results. Both
-commands process every extracted structure `.npz` file in `structures_dir`.
+`.raw` volumes. The second writes `.npy` arrays directly to its output
+directory (`$DATA_DIR/float_images` in the example). Image resolution and
+cropping are controlled by `--ref-size` and `--dev`; preserve those values
+with final results. Both commands process every extracted structure `.npz`
+file in `structures_dir`.
 
 `gas-traj-binarize-structures`'s `--num-workers` and `--ref-size` combine
 non-trivially into peak memory — see §15 before raising either on a large
@@ -844,9 +845,12 @@ Per-command notes:
   `--ref-size`. `gas-traj-distance-maps` (`distance_map_structs.py`) runs
   single-threaded.
 - `corrfunc_struct_plotter.py` (§11) defaults to `--num-workers 4` and uses a
-  `ThreadPoolExecutor`; each structure image is opened with
-  `np.load(..., mmap_mode="r")`, so resident memory stays close to the pages
-  actually touched rather than the full trajectory's images.
+  `ThreadPoolExecutor`. It reads each binary image once and keeps the
+  trajectory bit-packed in RAM before computing intersections with hardware
+  population counts. The packed data uses approximately
+  `frame_count * voxel_count / 8` bytes (about 1.57 GiB for 500 images of
+  300^3 voxels), plus one small work buffer per thread. Additional threads
+  stop helping once memory bandwidth is saturated.
 - `gas-traj-synthetic-benchmark` (§7, `sim_algo_check.py`, Figures 8/13 and
   Table I) is single-process and has no `--num-workers` flag. Its cost comes
   from `DistanceMatrixAnalyzer`'s O(N²) distance-matrix computation, repeated

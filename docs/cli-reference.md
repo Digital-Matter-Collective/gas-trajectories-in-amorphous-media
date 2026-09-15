@@ -79,7 +79,7 @@ Installed command: `gas-traj-distance-maps`.
 | Parameter | Required/default | Meaning |
 |---|---|---|
 | `structures_dir` | required | Directory containing extracted structure `.npz` files. |
-| `output_dir` | required | Base output directory; maps are written below `float_images/`. |
+| `output_float_dir` | required | Directory for distance-map `.npy` volumes; it is created if needed. |
 | `--ref-size N` | required | Voxel count along the cropped box’s shortest side and therefore the map resolution control. |
 | `--dev FLOAT` | `4.0` | Cell-cropping divisor; larger values retain a smaller central box. |
 
@@ -226,7 +226,7 @@ Installed command: `gas-traj-data-manifest`. It requires one subcommand.
 | `--trj PATH:LABEL` | required, repeatable | Gas GRO trajectory and legend label. Repeat to overlay gases. |
 | `--max-t FLOAT` | `2.8` µs | Maximum time used when plotting the trajectory RMSD series. |
 | `--x-max FLOAT` | automatic | Explicit right-hand X-axis limit in µs. |
-| `--num-workers N` | `4` | Thread count for incremental C(t) computation. |
+| `--num-workers N` | `4` | Thread count for bit-packed incremental C(t) computation. Memory bandwidth usually saturates before all CPU cores are useful. |
 
 ### `distr_pnm_element_size_plotter`
 

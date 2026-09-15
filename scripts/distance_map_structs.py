@@ -17,12 +17,11 @@ from utils.logging_setup import setup_logging
 
 def build_distance_maps(
     structures_dir: Path,
-    output_dir: Path,
+    output_float_dir: Path,
     ref_size: int,
     dev: float,
 ) -> None:
-    float_image_dir = output_dir / "float_images"
-    float_image_dir.mkdir(parents=True, exist_ok=True)
+    output_float_dir.mkdir(parents=True, exist_ok=True)
 
     structure_files = iter_structure_files(structures_dir)
     for i, structure_file in enumerate(structure_files):
@@ -32,7 +31,7 @@ def build_distance_maps(
         )
         segmentator = build_segmentator(structure, bbox, img_size)
         base_name = image_base_name(num, time_ps, bbox, resolution)
-        float_path = float_image_dir / f"{base_name}.npy"
+        float_path = output_float_dir / f"{base_name}.npy"
 
         if float_path.exists():
             kprint(
@@ -57,7 +56,11 @@ def main() -> None:
     parser.add_argument(
         "structures_dir", type=Path, help="Input structures dir"
     )
-    parser.add_argument("output_dir", type=Path, help="Output base directory")
+    parser.add_argument(
+        "output_float_dir",
+        type=Path,
+        help="Directory for distance-map .npy files",
+    )
     parser.add_argument("--ref-size", type=int, required=True)
     parser.add_argument("--dev", type=float, default=4.0)
 
@@ -65,7 +68,7 @@ def main() -> None:
 
     build_distance_maps(
         structures_dir=args.structures_dir,
-        output_dir=args.output_dir,
+        output_float_dir=args.output_float_dir,
         ref_size=args.ref_size,
         dev=args.dev,
     )
