@@ -24,7 +24,7 @@ def test_build_distance_maps_writes_directly_to_output_directory(
     monkeypatch.setattr(
         distance_map_structs,
         "iter_structure_files",
-        lambda path: [structure_path],
+        lambda path, indexes: [structure_path],
     )
     monkeypatch.setattr(
         distance_map_structs, "load_structure", lambda path: structure
@@ -56,3 +56,33 @@ def test_build_distance_maps_writes_directly_to_output_directory(
     np.testing.assert_array_equal(
         np.load(result_path), np.array([[[0.0, 0.5]]], dtype=np.float32)
     )
+
+
+def test_main_passes_explicit_indexes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    captured: dict[str, object] = {}
+    monkeypatch.setattr(distance_map_structs, "setup_logging", lambda: None)
+    monkeypatch.setattr(
+        distance_map_structs,
+        "build_distance_maps",
+        lambda **kwargs: captured.update(kwargs),
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "distance_map_structs",
+            str(tmp_path / "structures"),
+            str(tmp_path / "float_images"),
+            "--ref-size",
+            "300",
+            "--index",
+            "25000,50000",
+            "--index",
+            "75000",
+        ],
+    )
+
+    distance_map_structs.main()
+
+    assert captured["indexes"] == [25000, 50000, 75000]

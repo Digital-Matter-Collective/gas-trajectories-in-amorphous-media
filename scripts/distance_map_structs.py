@@ -11,6 +11,7 @@ from scripts.structure_image_utils import (
     iter_structure_files,
     kprint,
     load_structure,
+    parse_indexes,
 )
 from utils.logging_setup import setup_logging
 
@@ -20,10 +21,10 @@ def build_distance_maps(
     output_float_dir: Path,
     ref_size: int,
     dev: float,
+    indexes: list[int] | None = None,
 ) -> None:
+    structure_files = iter_structure_files(structures_dir, indexes)
     output_float_dir.mkdir(parents=True, exist_ok=True)
-
-    structure_files = iter_structure_files(structures_dir)
     for i, structure_file in enumerate(structure_files):
         structure = load_structure(structure_file)
         num, time_ps, bbox, resolution, img_size = extract_settings(
@@ -61,17 +62,36 @@ def main() -> None:
         type=Path,
         help="Directory for distance-map .npy files",
     )
+    parser.add_argument(
+        "--index",
+        action="append",
+        default=[],
+        metavar="STEP",
+        help=(
+            "Structure step number from struct-num=STEP_*.npz. Can be "
+            "repeated or contain comma-separated values; by default all "
+            "structures are processed."
+        ),
+    )
     parser.add_argument("--ref-size", type=int, required=True)
     parser.add_argument("--dev", type=float, default=4.0)
 
     args = parser.parse_args()
+    try:
+        indexes = parse_indexes(args.index)
+    except ValueError as exc:
+        parser.error(f"invalid --index value: {exc}")
 
-    build_distance_maps(
-        structures_dir=args.structures_dir,
-        output_float_dir=args.output_float_dir,
-        ref_size=args.ref_size,
-        dev=args.dev,
-    )
+    try:
+        build_distance_maps(
+            structures_dir=args.structures_dir,
+            output_float_dir=args.output_float_dir,
+            ref_size=args.ref_size,
+            dev=args.dev,
+            indexes=indexes or None,
+        )
+    except FileNotFoundError as exc:
+        parser.error(str(exc))
 
 
 if __name__ == "__main__":

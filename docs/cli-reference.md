@@ -80,10 +80,12 @@ Installed command: `gas-traj-distance-maps`.
 |---|---|---|
 | `structures_dir` | required | Directory containing extracted structure `.npz` files. |
 | `output_float_dir` | required | Directory for distance-map `.npy` volumes; it is created if needed. |
+| `--index STEP` | optional, repeatable | Process only the structure whose filename starts with `struct-num=STEP_`. May be repeated or contain comma-separated values. Without this option, every structure is processed. |
 | `--ref-size N` | required | Voxel count along the cropped box’s shortest side and therefore the map resolution control. |
 | `--dev FLOAT` | `4.0` | Cell-cropping divisor; larger values retain a smaller central box. |
 
-Every extracted structure `.npz` file in `structures_dir` is processed.
+Every extracted structure `.npz` file in `structures_dir` is processed unless
+one or more `--index` options select a subset.
 
 ### `pnm_extractor`
 

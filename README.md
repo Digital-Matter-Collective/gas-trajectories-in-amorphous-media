@@ -223,7 +223,7 @@ If you use the software or its methods, cite it using the concept DOI in
 will continue to resolve after new releases are published:
 
 > Ananev, A., Potapova, M., Vostroknutov, T., Kondratyuk, N., & Khlyupin, A.
-> (2026). *gas-trajectories-in-kerogen* (Version 1.0.0) [Computer software].
+> (2026). *gas-trajectories-in-kerogen* (Version 1.1.0) [Computer software].
 > Zenodo. <https://doi.org/10.5281/zenodo.22309111>
 
 GitHub's **Cite this repository** menu reads `CITATION.cff` and can export
@@ -233,7 +233,7 @@ the [MIT License](LICENSE).
 Research datasets are not distributed by this repository and are not covered
 by the software license. If you use the accompanying molecular-dynamics or
 derived data, cite its Zenodo record separately in addition to the software:
-<https://doi.org/10.5281/zenodo.22309334>. Use the **Citation** panel on that
+<https://doi.org/10.5281/zenodo.22309333>. Use the **Citation** panel on that
 record to export the dataset citation in the style required by the journal.
 
 When the accompanying article receives a DOI, add it to the commented

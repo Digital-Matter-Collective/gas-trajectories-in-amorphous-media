@@ -235,3 +235,24 @@ def test_iter_structure_files_returns_every_structure_sorted_by_step(
     files = iter_structure_files(tmp_path)
 
     assert [path.name for path in files] == expected_names
+
+
+def test_iter_structure_files_filters_explicit_indexes(tmp_path: Path) -> None:
+    for step in [25, 100, 300]:
+        (tmp_path / f"struct-num={step}_time-ps=1.0.npz").touch()
+
+    files = iter_structure_files(tmp_path, indexes=[300, 25])
+
+    assert [path.name for path in files] == [
+        "struct-num=25_time-ps=1.0.npz",
+        "struct-num=300_time-ps=1.0.npz",
+    ]
+
+
+def test_iter_structure_files_rejects_missing_explicit_index(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "struct-num=25_time-ps=1.0.npz").touch()
+
+    with pytest.raises(FileNotFoundError, match=r"index\(es\): 100"):
+        iter_structure_files(tmp_path, indexes=[25, 100])

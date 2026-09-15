@@ -223,6 +223,18 @@ cropping are controlled by `--ref-size` and `--dev`; preserve those values
 with final results. Both commands process every extracted structure `.npz`
 file in `structures_dir`.
 
+To build a distance map for one structure step, pass the number stored in its
+`struct-num=...` filename:
+
+```bash
+python -m scripts.distance_map_structs \
+  "$DATA_DIR/structures" "$DATA_DIR/float_images" \
+  --ref-size 300 --index 25000
+```
+
+Repeat `--index` (or use a comma-separated value) to process several explicit
+steps. Without `--index`, all available structures are processed.
+
 `gas-traj-binarize-structures`'s `--num-workers` and `--ref-size` combine
 non-trivially into peak memory — see §15 before raising either on a large
 structure; if the process is OOM-killed, lower `--num-workers` and/or
