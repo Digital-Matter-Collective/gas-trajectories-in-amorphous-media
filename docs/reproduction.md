@@ -198,7 +198,7 @@ gas-traj-binarize-structures \
   "$DATA_DIR/structures" \
   "$DATA_DIR/bin_images" \
   "$DATA_DIR/raw_images" \
-  --ref-size 300 --num-workers 10
+  --dev 3 --ref-size 750 --num-workers 10
 
 gas-traj-distance-maps \
   "$DATA_DIR/structures" "$DATA_DIR/float_images" \
@@ -209,7 +209,7 @@ python -m scripts.binarization_structs \
   "$DATA_DIR/structures" \
   "$DATA_DIR/bin_images" \
   "$DATA_DIR/raw_images" \
-  --ref-size 300 --num-workers 10
+  --dev 3 --ref-size 750 --num-workers 10
 
 python -m scripts.distance_map_structs \
   "$DATA_DIR/structures" "$DATA_DIR/float_images" \
