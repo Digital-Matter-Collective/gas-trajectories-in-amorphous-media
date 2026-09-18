@@ -24,7 +24,7 @@ def test_build_manifest_hashes_every_file_and_skips_itself(
     manifest = build_manifest(
         data_dir,
         license_name="CC-BY-4.0",
-        code_url="https://github.com/Digital-Matter-Collective/gas-trajectories-in-kerogen",
+        code_url="https://github.com/Digital-Matter-Collective/gas-trajectories-in-amorphous-media",
         code_version="v1.0.0",
         description="Reference PNM outputs",
     )

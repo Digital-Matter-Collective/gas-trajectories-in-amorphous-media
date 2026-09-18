@@ -190,6 +190,7 @@ def test_dynamic_extractor_selects_500_frames_after_skipping_first(
         mode="all",
         index=[],
         indexes_file=None,
+        include_first_step=False,
     )
 
     indexes = build_indexes_from_args(args)
@@ -214,9 +215,50 @@ def test_dynamic_extractor_excludes_first_frame_from_explicit_indexes(
         mode="all",
         index=["25000,275000"],
         indexes_file=None,
+        include_first_step=False,
     )
 
     assert build_indexes_from_args(args) == [275000]
+
+
+def test_dynamic_extractor_include_first_step_keeps_the_auto_selected_first_frame(
+    tmp_path: Path,
+) -> None:
+    trajectory = tmp_path / "trajectory.gro"
+    steps = [25000 + 250000 * position for position in range(1001)]
+    _write_empty_gro(trajectory, steps)
+    args = argparse.Namespace(
+        auto_indexes=True,
+        input=trajectory,
+        count_structures=500,
+        mode="all",
+        index=[],
+        indexes_file=None,
+        include_first_step=True,
+    )
+
+    indexes = build_indexes_from_args(args)
+
+    assert indexes[0] == steps[0]
+    assert 25000 in indexes
+
+
+def test_dynamic_extractor_include_first_step_keeps_it_in_explicit_indexes(
+    tmp_path: Path,
+) -> None:
+    trajectory = tmp_path / "trajectory.gro"
+    _write_empty_gro(trajectory, [25000, 275000, 525000])
+    args = argparse.Namespace(
+        auto_indexes=False,
+        input=trajectory,
+        count_structures=None,
+        mode="all",
+        index=["25000,275000"],
+        indexes_file=None,
+        include_first_step=True,
+    )
+
+    assert build_indexes_from_args(args) == [25000, 275000]
 
 
 def test_iter_structure_files_returns_every_structure_sorted_by_step(
@@ -235,3 +277,24 @@ def test_iter_structure_files_returns_every_structure_sorted_by_step(
     files = iter_structure_files(tmp_path)
 
     assert [path.name for path in files] == expected_names
+
+
+def test_iter_structure_files_filters_explicit_indexes(tmp_path: Path) -> None:
+    for step in [25, 100, 300]:
+        (tmp_path / f"struct-num={step}_time-ps=1.0.npz").touch()
+
+    files = iter_structure_files(tmp_path, indexes=[300, 25])
+
+    assert [path.name for path in files] == [
+        "struct-num=25_time-ps=1.0.npz",
+        "struct-num=300_time-ps=1.0.npz",
+    ]
+
+
+def test_iter_structure_files_rejects_missing_explicit_index(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "struct-num=25_time-ps=1.0.npz").touch()
+
+    with pytest.raises(FileNotFoundError, match=r"index\(es\): 100"):
+        iter_structure_files(tmp_path, indexes=[25, 100])

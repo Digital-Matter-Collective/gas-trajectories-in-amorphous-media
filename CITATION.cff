@@ -4,7 +4,7 @@ message: >-
   use the accompanying research data, cite the dataset separately as described
   in the README.
 type: software
-title: gas-trajectories-in-kerogen
+title: gas-trajectories-in-amorphous-media
 abstract: >-
   Trajectory analysis of gas molecules in kerogen pore structures: trapping-event
   classification (distance-matrix, Neyman-Pearson, Bayesian and hybrid analyzers),
@@ -28,7 +28,7 @@ authors:
   - family-names: Khlyupin
     given-names: Aleksey
     orcid: "https://orcid.org/0000-0002-6686-7243"
-repository-code: "https://github.com/Digital-Matter-Collective/gas-trajectories-in-kerogen"
+repository-code: "https://github.com/Digital-Matter-Collective/gas-trajectories-in-amorphous-media"
 url: "https://doi.org/10.5281/zenodo.22309111"
 license: MIT
 

@@ -263,14 +263,7 @@ class Reader:
         )
         mask0 = linked_list[:, 0] <= 0
         mask1 = linked_list[:, 1] <= 0
-        nn1 = linked_list[mask0, 1] - 1
-        nn0 = linked_list[mask1, 0] - 1
 
-        node_mask = np.ones(shape=(len(radiuses),), dtype=np.bool_)
-        node_mask[nn0] = False
-        node_mask[nn1] = False
-
-        radiuses = radiuses[node_mask]
         radiuses.sort()
         radiuses = radiuses[radiuses > border]
 

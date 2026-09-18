@@ -48,11 +48,12 @@ Installed command: `gas-traj-extract-structures`.
 |---|---|---|
 | `input` | required | Input multi-frame GRO trajectory. |
 | `output_dir` | required | Directory for extracted `struct-num=..._time-ps=....npz` structures; it is created if needed. |
-| `--index STEP` | selection required unless `--auto-indexes`; repeatable | Extract a simulation step. One occurrence may contain comma- or whitespace-separated steps. A request for the first trajectory frame is ignored. |
+| `--index STEP` | selection required unless `--auto-indexes`; repeatable | Extract a simulation step. One occurrence may contain comma- or whitespace-separated steps. A request for the first trajectory frame is dropped unless `--include-first-step` is passed. |
 | `--indexes-file FILE` | selection required unless `--auto-indexes` | Text file containing comma- or whitespace-separated simulation steps. It may be combined with `--index`. |
-| `--auto-indexes` | off | Read available steps from the GRO headers, always exclude the first frame, and select the requested structures. Mutually exclusive with `--index`/`--indexes-file`. |
-| `--mode {all,part}` | `all` | With `--auto-indexes`, `all` spreads steps from the second available frame through the last, including both endpoints; `part` takes frames consecutively beginning with the second. |
-| `--count-structures N` | required with `--auto-indexes` | Number of structures requested. Fewer are returned only if fewer frames remain after excluding the first. |
+| `--auto-indexes` | off | Read available steps from the GRO headers, exclude the first frame unless `--include-first-step` is passed, and select the requested structures. Mutually exclusive with `--index`/`--indexes-file`. |
+| `--include-first-step` | off | Extract the very first trajectory frame too, instead of dropping it. It precedes equilibration, so downstream PNM/structure-derived analyses (including `gas-traj-stationarity`) expect it to be absent. |
+| `--mode {all,part}` | `all` | With `--auto-indexes`, `all` spreads steps from the first eligible frame through the last, including both endpoints; `part` takes frames consecutively beginning with the first eligible one. |
+| `--count-structures N` | required with `--auto-indexes` | Number of structures requested. Fewer are returned only if fewer eligible frames are available. |
 | `--slice-len N` | `100` | Number of requested structures read in one batch; affects I/O batching, not the selected set. |
 | `--dry-run` | off | Print the generated/explicit indexes without extracting structures. |
 
@@ -68,7 +69,6 @@ Installed command: `gas-traj-binarize-structures`.
 | `--ref-size N` | required | Voxel count along the shortest side of the cropped bounding box. It determines spatial resolution and has roughly quadratic influence on per-slice working memory. |
 | `--dev FLOAT` | `2.0` | Cell-cropping divisor passed to `Segmentator.cut_cell`; larger values retain a smaller central box. |
 | `--num-workers N` | `4` | Number of worker processes used to binarize slices. More workers increase both concurrency and peak memory. |
-| `--atom-chunk N` | `1024` | Atoms per pairwise-distance batch in each worker. Lower values reduce peak memory at some CPU cost. |
 
 Every extracted structure `.npz` file in `structures_dir` is processed.
 
@@ -79,11 +79,13 @@ Installed command: `gas-traj-distance-maps`.
 | Parameter | Required/default | Meaning |
 |---|---|---|
 | `structures_dir` | required | Directory containing extracted structure `.npz` files. |
-| `output_dir` | required | Base output directory; maps are written below `float_images/`. |
+| `output_float_dir` | required | Directory for distance-map `.npy` volumes; it is created if needed. |
+| `--index STEP` | optional, repeatable | Process only the structure whose filename starts with `struct-num=STEP_`. May be repeated or contain comma-separated values. Without this option, every structure is processed. |
 | `--ref-size N` | required | Voxel count along the cropped box’s shortest side and therefore the map resolution control. |
 | `--dev FLOAT` | `4.0` | Cell-cropping divisor; larger values retain a smaller central box. |
 
-Every extracted structure `.npz` file in `structures_dir` is processed.
+Every extracted structure `.npz` file in `structures_dir` is processed unless
+one or more `--index` options select a subset.
 
 ### `pnm_extractor`
 
@@ -226,7 +228,7 @@ Installed command: `gas-traj-data-manifest`. It requires one subcommand.
 | `--trj PATH:LABEL` | required, repeatable | Gas GRO trajectory and legend label. Repeat to overlay gases. |
 | `--max-t FLOAT` | `2.8` µs | Maximum time used when plotting the trajectory RMSD series. |
 | `--x-max FLOAT` | automatic | Explicit right-hand X-axis limit in µs. |
-| `--num-workers N` | `4` | Thread count for incremental C(t) computation. |
+| `--num-workers N` | `4` | Thread count for bit-packed incremental C(t) computation. Memory bandwidth usually saturates before all CPU cores are useful. |
 
 ### `distr_pnm_element_size_plotter`
 

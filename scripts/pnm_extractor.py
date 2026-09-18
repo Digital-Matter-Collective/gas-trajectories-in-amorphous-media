@@ -113,5 +113,5 @@ if __name__ == '__main__':
         else:
             kprint(f"Sucssess: {pnm_pref}")
             kprint(
-                f"Ready index = {i+1} from {len(onlyfiles)}, Elapsed time: {time.time() - start_time}s. "
+                f"Ready index = {i + 1} from {len(onlyfiles)}, Elapsed time: {time.time() - start_time}s."
             )

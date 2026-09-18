@@ -1,5 +1,6 @@
 import argparse
 import re
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
@@ -26,6 +27,16 @@ _IMAGE_PATTERN = re.compile(
 class RMSDResult:
     rmsd: np.ndarray
     t: np.ndarray
+
+
+@dataclass(frozen=True)
+class PackedImages:
+    words: npt.NDArray[np.uint64]
+    sizes: npt.NDArray[np.int64]
+    image_shape: tuple[int, ...]
+
+
+_worker_buffers = threading.local()
 
 
 def parse_trj(value: str) -> tuple[Path, str]:
@@ -172,7 +183,7 @@ def correlation_average_time(
     """
     Time-averaged autocorrelation function:
 
-        C(tau_k) = mean_i [ sum_x I_i(x) I_{i+k}(x) / V ]
+        C(tau_k) = mean_i [ sum_x I_i(x) I_{i+k}(x) / sum_x I_i(x) ]
     """
     image_infos = sorted(image_infos, key=lambda x: x[0])
 
@@ -206,43 +217,150 @@ def correlation_average_time(
         C_t = np.full(n, np.nan, dtype=np.float64)
         write_manifest(ct_save_path, cache_metadata)
 
-    def process(
-        chunk_i: npt.NDArray[np.int32], lag: int
-    ) -> npt.NDArray[np.float64]:
-        result = np.full(len(chunk_i), np.nan, dtype=np.float64)
-        for local_idx, i in enumerate(chunk_i):
-            img_i = load_img(img_files[i])
-            image_size = float(np.sum(img_i))
-            img_j = load_img(img_files[i + lag])
-            result[local_idx] = np.sum(img_i * img_j) / image_size
-        return result
+    if C_t.shape != (n,):
+        kprint(
+            f"Cache {ct_save_path} has shape {C_t.shape}, expected {(n,)}; "
+            "recomputing from scratch"
+        )
+        C_t = np.full(n, np.nan, dtype=np.float64)
 
-    for lag in range(n):
-        start_time = time.time()
-        if not np.isnan(C_t[lag]):
-            kprint(f"Skip lag: {lag} from {n}, C: {C_t[lag]}")
-            continue
-        xdata = np.array(list(range(n - lag)), dtype=np.int32)
+    missing_lags = np.flatnonzero(np.isnan(C_t))
+    if len(missing_lags) == 0:
+        return dt, C_t
 
-        if num_workers == 0:
-            values = process(xdata, lag)
-        else:
-            chunk_size = ((n - lag) // num_workers) + 1
-            chunks = [
-                xdata[i : min(i + chunk_size, len(xdata))]
-                for i in range(0, len(xdata), chunk_size)
-            ]
-            with ThreadPoolExecutor(max_workers=num_workers) as executor:
-                chunk_results = list(executor.map(process, chunks, repeat(lag)))
+    if num_workers < 0:
+        raise ValueError("num_workers must be non-negative")
+
+    load_start = time.perf_counter()
+    kprint("Loading and bit-packing binary images (one pass over each file)")
+    packed = pack_binary_images(img_files, load_img)
+    packed_mib = packed.words.nbytes / (1024**2)
+    kprint(
+        f"Loaded and bit-packed {n} images with shape {packed.image_shape} "
+        f"into {packed_mib:.1f} MiB in "
+        f"{time.perf_counter() - load_start:.2f} sec"
+    )
+
+    executor = (
+        ThreadPoolExecutor(max_workers=num_workers) if num_workers > 0 else None
+    )
+    try:
+        for lag in range(n):
+            start_time = time.perf_counter()
+            if not np.isnan(C_t[lag]):
+                kprint(f"Skip lag: {lag} from {n}, C: {C_t[lag]}")
+                continue
+
+            pair_count = n - lag
+            if executor is None:
+                values = _process_packed_pairs(range(pair_count), lag, packed)
+            else:
+                chunk_size = (pair_count + num_workers - 1) // num_workers
+                chunks = [
+                    range(start, min(start + chunk_size, pair_count))
+                    for start in range(0, pair_count, chunk_size)
+                ]
+                chunk_results = list(
+                    executor.map(
+                        _process_packed_pairs,
+                        chunks,
+                        repeat(lag),
+                        repeat(packed),
+                    )
+                )
                 values = np.concatenate(chunk_results)
 
-        C_t[lag] = np.mean(values)
-        np.save(ct_save_path, C_t)
-        kprint(
-            f"Ready lag: {lag} from {n}, C: {C_t[lag]} in {time.time() - start_time:.2f} sec"
-        )
+            C_t[lag] = np.mean(values)
+            np.save(ct_save_path, C_t)
+            kprint(
+                f"Ready lag: {lag} from {n}, C: {C_t[lag]} in "
+                f"{time.perf_counter() - start_time:.2f} sec"
+            )
+    finally:
+        if executor is not None:
+            executor.shutdown()
 
     return dt, C_t
+
+
+def pack_binary_images(
+    img_files: List[str],
+    load_img: Callable[[str], npt.NDArray[np.int8]],
+) -> PackedImages:
+    """Load binary images once and pack every 64 voxels into one word."""
+    if not img_files:
+        raise ValueError("At least one image is required")
+
+    first_image = np.asarray(load_img(img_files[0]))
+    image_shape = first_image.shape
+    voxel_count = first_image.size
+    word_count = (voxel_count + 63) // 64
+
+    words = np.zeros((len(img_files), word_count), dtype=np.uint64)
+    byte_rows = words.view(np.uint8).reshape(len(img_files), word_count * 8)
+    sizes = np.empty(len(img_files), dtype=np.int64)
+
+    def store_image(index: int, image: npt.NDArray[np.int8]) -> None:
+        image_array = np.asarray(image)
+        if image_array.shape != image_shape:
+            raise ValueError(
+                f"Image {img_files[index]} has shape {image_array.shape}, "
+                f"expected {image_shape}"
+            )
+
+        flat_image = image_array.reshape(-1)
+        image_size = int(np.sum(flat_image, dtype=np.int64))
+        if image_size <= 0:
+            raise ValueError(f"Image {img_files[index]} contains no set voxels")
+
+        packed_bytes = np.packbits(flat_image, bitorder="little")
+        byte_rows[index, : len(packed_bytes)] = packed_bytes
+        sizes[index] = image_size
+
+    store_image(0, first_image)
+    del first_image
+    progress_step = max(1, len(img_files) // 10)
+    for index, file_name in enumerate(img_files[1:], start=1):
+        store_image(index, load_img(file_name))
+        completed = index + 1
+        if len(img_files) >= 20 and (
+            completed % progress_step == 0 or completed == len(img_files)
+        ):
+            kprint(f"Bit-packed {completed} from {len(img_files)} images")
+
+    return PackedImages(words=words, sizes=sizes, image_shape=image_shape)
+
+
+def _process_packed_pairs(
+    indexes: range,
+    lag: int,
+    packed: PackedImages,
+) -> npt.NDArray[np.float64]:
+    """Compute normalized intersections for a range of frame pairs."""
+    word_count = packed.words.shape[1]
+    and_words = getattr(_worker_buffers, "and_words", None)
+    bit_counts = getattr(_worker_buffers, "bit_counts", None)
+    if (
+        and_words is None
+        or bit_counts is None
+        or and_words.shape != (word_count,)
+    ):
+        and_words = np.empty(word_count, dtype=np.uint64)
+        bit_counts = np.empty(word_count, dtype=np.uint8)
+        _worker_buffers.and_words = and_words
+        _worker_buffers.bit_counts = bit_counts
+
+    result = np.empty(len(indexes), dtype=np.float64)
+    for local_index, image_index in enumerate(indexes):
+        np.bitwise_and(
+            packed.words[image_index],
+            packed.words[image_index + lag],
+            out=and_words,
+        )
+        np.bitwise_count(and_words, out=bit_counts)
+        overlap = np.sum(bit_counts, dtype=np.uint64)
+        result[local_index] = overlap / packed.sizes[image_index]
+    return result
 
 
 def main() -> None:
@@ -297,7 +415,10 @@ def main() -> None:
         "--num-workers",
         type=int,
         default=4,
-        help="Number of threads for C(t) computation (default: 4).",
+        help=(
+            "Number of threads for bit-packed C(t) computation; memory "
+            "bandwidth usually saturates around 4 threads (default: 4)."
+        ),
     )
 
     args = parser.parse_args()
@@ -311,8 +432,7 @@ def main() -> None:
 
     def load_img(file_name: str) -> np.ndarray:
         img = np.load(file_name, mmap_mode="r")
-        img = 1 - img
-        return cast(np.ndarray, img.astype(np.int8))
+        return cast(np.ndarray, np.equal(img, 0))
 
     ct_file.parent.mkdir(parents=True, exist_ok=True)
     dt, C_t = correlation_average_time(

@@ -306,7 +306,10 @@ def image_base_name(
 
 def iter_structure_files(
     structures_dir: Path,
+    indexes: Iterable[int] | None = None,
 ) -> list[Path]:
+    index_set = set(indexes or [])
+    found_indexes: set[int] = set()
     files_by_step = []
 
     for path in structures_dir.iterdir():
@@ -316,7 +319,17 @@ def iter_structure_files(
         if not match:
             continue
         step = int(match.group("step"))
+        if index_set and step not in index_set:
+            continue
+        found_indexes.add(step)
         files_by_step.append((step, path))
+
+    missing_indexes = sorted(index_set - found_indexes)
+    if missing_indexes:
+        missing = ", ".join(str(index) for index in missing_indexes)
+        raise FileNotFoundError(
+            f"No structure .npz file found for index(es): {missing}"
+        )
 
     return [path for _, path in sorted(files_by_step, key=lambda item: item[0])]
 
@@ -401,5 +414,4 @@ def build_segmentator(
         img_size,
         size_data=get_size,
         radius_extention=get_ext_size,
-        partitioning=2,
     )

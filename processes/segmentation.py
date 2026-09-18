@@ -7,11 +7,25 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, cast
 import numpy as np
 import numpy.typing as npt
 from scipy.spatial import cKDTree
-from scipy.spatial.distance import cdist
 
 from base.boundingbox import KerogenBox, Range
 from base.kerogendata import KerogenData
 from utils.utils import kprint
+
+RadiusTrees = List[Tuple[float, cKDTree]]
+
+
+def _build_radius_trees(
+    positions: npt.NDArray[np.float32], sizes: npt.NDArray[np.float32]
+) -> RadiusTrees:
+    """One cKDTree per distinct atom radius, so `is this grid point inside
+    some atom's sphere` becomes a single vectorized nearest-neighbor query
+    per radius group (`tree.query(..., distance_upper_bound=radius)`)
+    instead of a brute-force distance scan against every atom."""
+    return [
+        (float(radius), cKDTree(positions[sizes == radius]))
+        for radius in np.unique(sizes)
+    ]
 
 
 class BinarizeAlgo(Enum):
@@ -25,19 +39,17 @@ _proc_worker_state: Dict[str, Any] = {}
 
 
 def _proc_worker_init(
-    bb: List[KerogenBox],
+    radius_trees: RadiusTrees,
     vox_sizes: "np.ndarray",
     mins: "np.ndarray",
     img_size: Tuple[int, int, int],
-    atom_chunk: int,
     yz_flat: "np.ndarray",
 ) -> None:
     _proc_worker_state.update(
-        bb=bb,
+        radius_trees=radius_trees,
         vox_sizes=vox_sizes,
         mins=mins,
         img_size=img_size,
-        atom_chunk=atom_chunk,
         yz_flat=yz_flat,
     )
 
@@ -46,11 +58,10 @@ def _proc_worker_process_chunk(
     chunk_indices: List[int],
 ) -> List[Tuple[int, npt.NDArray[np.int8]]]:
     s = _proc_worker_state
-    bb = s["bb"]
+    radius_trees: RadiusTrees = s["radius_trees"]
     vox_sizes = s["vox_sizes"]
     mins = s["mins"]
     img_size = s["img_size"]
-    atom_chunk = s["atom_chunk"]
     yz_flat = s["yz_flat"]
     Ny, Nz = img_size[1], img_size[2]
 
@@ -60,27 +71,11 @@ def _proc_worker_process_chunk(
         x_col = np.full((Ny * Nz, 1), gx, dtype=np.float32)
         pos = np.hstack([x_col, yz_flat])
         atom_mask = np.zeros(Ny * Nz, dtype=bool)
-        for bb_entry in bb:
-            in_bb = (
-                (pos[:, 0] >= bb_entry.xb_.min_)
-                & (pos[:, 0] <= bb_entry.xb_.max_)
-                & (pos[:, 1] >= bb_entry.yb_.min_)
-                & (pos[:, 1] <= bb_entry.yb_.max_)
-                & (pos[:, 2] >= bb_entry.zb_.min_)
-                & (pos[:, 2] <= bb_entry.zb_.max_)
+        for radius, tree in radius_trees:
+            dist, _ = tree.query(
+                pos, k=1, distance_upper_bound=radius, workers=1
             )
-            if not in_bb.any() or len(bb_entry.positions) == 0:
-                continue
-            pos_in = pos[in_bb]
-            mask_in = np.zeros(int(in_bb.sum()), dtype=bool)
-            for a_start in range(0, len(bb_entry.positions), atom_chunk):
-                dists = cdist(
-                    pos_in, bb_entry.positions[a_start : a_start + atom_chunk]
-                )
-                mask_in |= (
-                    dists < bb_entry.atom_sizes[a_start : a_start + atom_chunk]
-                ).any(axis=1)
-            atom_mask[in_bb] |= mask_in
+            atom_mask |= dist < radius
         results.append((ix, (~atom_mask).reshape(Ny, Nz).astype(np.int8)))
     kprint(f"Chunk slices {chunk_indices[0]}..{chunk_indices[-1]}-x finished!")
     return results
@@ -93,58 +88,24 @@ class Segmentator:
         img_size: Tuple[int, int, int],
         size_data: Callable[[int], float],
         radius_extention: Callable[[int], float],
-        partitioning: int = 2,
-        max_atom_size: float = 0.18,
     ):
         self.kerogen = kerogen
         self.img_size = img_size
         self.radius_extention = radius_extention
-        vox_sizes = [
-            ker_s / float(img_s)
-            for ker_s, img_s in zip(kerogen.box.size(), img_size)
-        ]
 
-        # Precompute positions and sizes for all atoms as numpy arrays once
-        all_positions = np.array(
+        self.all_positions = np.array(
             [a.pos for a in kerogen.atoms], dtype=np.float32
         )
-        sizes_arr = np.array(
+        self.atom_sizes = np.array(
             [
                 size_data(a.type_id) + radius_extention(a.type_id)
                 for a in kerogen.atoms
             ],
             dtype=np.float32,
         )
-
-        steps = [ker_s / partitioning for ker_s in kerogen.box.size()]
-        shifts = self.kerogen.box.min()
-        self.bb: List[KerogenBox] = []
-        for i in range(partitioning):
-            for j in range(partitioning):
-                for k in range(partitioning):
-                    nums = [i, j, k]
-                    aranges = [
-                        Range(
-                            num * step - 2 * vs - max_atom_size + s,
-                            (num + 1) * step + 2 * vs + max_atom_size + s,
-                        )
-                        for num, step, vs, s in zip(
-                            nums, steps, vox_sizes, shifts
-                        )
-                    ]
-                    bb = KerogenBox(*aranges)
-                    in_bb = (
-                        (all_positions[:, 0] >= bb.xb_.min_)
-                        & (all_positions[:, 0] <= bb.xb_.max_)
-                        & (all_positions[:, 1] >= bb.yb_.min_)
-                        & (all_positions[:, 1] <= bb.yb_.max_)
-                        & (all_positions[:, 2] >= bb.zb_.min_)
-                        & (all_positions[:, 2] <= bb.zb_.max_)
-                    )
-                    bb.atom_ids = np.where(in_bb)[0].astype(np.int32)
-                    bb.atom_sizes = sizes_arr[in_bb]
-                    bb.positions = all_positions[in_bb]
-                    self.bb.append(bb)
+        self.radius_trees: RadiusTrees = _build_radius_trees(
+            self.all_positions, self.atom_sizes
+        )
 
     @staticmethod
     def cut_cell(
@@ -193,7 +154,6 @@ class Segmentator:
     def binarize(
         self,
         num_workers: int = 15,
-        atom_chunk: int = 1024,
         algo: Optional[BinarizeAlgo] = None,
         chunk_size: int = 8,
     ) -> npt.NDArray[np.int8]:
@@ -226,27 +186,11 @@ class Segmentator:
             x_col = np.full((Ny * Nz, 1), gx, dtype=np.float32)
             pos = np.hstack([x_col, yz_flat])
             atom_mask = np.zeros(Ny * Nz, dtype=bool)
-            for bb in self.bb:
-                in_bb = (
-                    (pos[:, 0] >= bb.xb_.min_)
-                    & (pos[:, 0] <= bb.xb_.max_)
-                    & (pos[:, 1] >= bb.yb_.min_)
-                    & (pos[:, 1] <= bb.yb_.max_)
-                    & (pos[:, 2] >= bb.zb_.min_)
-                    & (pos[:, 2] <= bb.zb_.max_)
+            for radius, tree in self.radius_trees:
+                dist, _ = tree.query(
+                    pos, k=1, distance_upper_bound=radius, workers=1
                 )
-                if not in_bb.any() or len(bb.positions) == 0:
-                    continue
-                pos_in = pos[in_bb]
-                mask_in = np.zeros(int(in_bb.sum()), dtype=bool)
-                for a_start in range(0, len(bb.positions), atom_chunk):
-                    dists = cdist(
-                        pos_in, bb.positions[a_start : a_start + atom_chunk]
-                    )
-                    mask_in |= (
-                        dists < bb.atom_sizes[a_start : a_start + atom_chunk]
-                    ).any(axis=1)
-                atom_mask[in_bb] |= mask_in
+                atom_mask |= dist < radius
             return (~atom_mask).reshape(Ny, Nz).astype(np.int8)
 
         if algo == BinarizeAlgo.SEQUENTIAL:
@@ -291,11 +235,10 @@ class Segmentator:
                 max_workers=n,
                 initializer=_proc_worker_init,
                 initargs=(
-                    self.bb,
+                    self.radius_trees,
                     vox_sizes,
                     mins,
                     self.img_size,
-                    atom_chunk,
                     yz_flat,
                 ),
             ) as process_executor:
@@ -312,7 +255,6 @@ class Segmentator:
     def benchmark_binarize(
         self,
         num_workers: int = 8,
-        atom_chunk: int = 1024,
         chunk_size: int = 8,
         algos: Optional[List[BinarizeAlgo]] = None,
     ) -> Dict[str, float]:
@@ -325,7 +267,6 @@ class Segmentator:
             t0 = time.perf_counter()
             self.binarize(
                 num_workers=num_workers,
-                atom_chunk=atom_chunk,
                 algo=algo,
                 chunk_size=chunk_size,
             )
@@ -345,8 +286,7 @@ class Segmentator:
             for ker_s, img_s in zip(self.kerogen.box.size(), self.img_size)
         ]
 
-        all_atom_positions = np.vstack([bb.positions for bb in self.bb])
-        tree = cKDTree(all_atom_positions)
+        tree = cKDTree(self.all_positions)
 
         def wrap(ix: int) -> npt.NDArray[np.float32]:
             ny, nz = self.img_size[1], self.img_size[2]
