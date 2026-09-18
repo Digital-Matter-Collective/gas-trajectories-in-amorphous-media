@@ -1,6 +1,6 @@
-# gas-trajectories-in-kerogen
+# gas-trajectories-in-amorphous-media
 
-gas-trajectories-in-kerogen is a research package for studying gas-molecule trajectories
+gas-trajectories-in-amorphous-media is a research package for studying gas-molecule trajectories
 in dynamic kerogen pore structures. It implements trapping-event classifiers,
 synthetic validation experiments, molecular-dynamics trajectory preprocessing,
 and downstream pore-network statistics used in the accompanying research.
@@ -223,7 +223,7 @@ If you use the software or its methods, cite it using the concept DOI in
 will continue to resolve after new releases are published:
 
 > Ananev, A., Potapova, M., Vostroknutov, T., Kondratyuk, N., & Khlyupin, A.
-> (2026). *gas-trajectories-in-kerogen* (Version 1.1.0) [Computer software].
+> (2026). *gas-trajectories-in-amorphous-media* (Version 1.1.0) [Computer software].
 > Zenodo. <https://doi.org/10.5281/zenodo.22309111>
 
 GitHub's **Cite this repository** menu reads `CITATION.cff` and can export

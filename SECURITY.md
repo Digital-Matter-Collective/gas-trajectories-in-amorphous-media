@@ -12,7 +12,7 @@ latest commit on `main` (and the most recent tagged release, currently
 Please **do not** open a public GitHub issue for a security vulnerability.
 Instead, use GitHub's private vulnerability reporting for this repository:
 
-<https://github.com/Digital-Matter-Collective/gas-trajectories-in-kerogen/security/advisories/new>
+<https://github.com/Digital-Matter-Collective/gas-trajectories-in-amorphous-media/security/advisories/new>
 
 This opens a draft security advisory visible only to the maintainers, where
 you can describe the issue, its impact, and (if you have one) a suggested

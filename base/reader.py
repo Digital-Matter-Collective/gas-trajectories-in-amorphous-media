@@ -264,8 +264,6 @@ class Reader:
         mask0 = linked_list[:, 0] <= 0
         mask1 = linked_list[:, 1] <= 0
 
-
-
         radiuses.sort()
         radiuses = radiuses[radiuses > border]
 

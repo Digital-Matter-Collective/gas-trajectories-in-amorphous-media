@@ -14,7 +14,12 @@ echo "[2/5] isort --check-only"
 isort --check-only --settings-path=pyproject.toml $PYTHON_FILES
 
 echo "[3/5] black --check"
-black --check --config=pyproject.toml $PYTHON_FILES
+for file in $PYTHON_FILES; do
+  if ! black --check --config=pyproject.toml "$file" >/dev/null 2>&1; then
+    black --check --config=pyproject.toml "$file"
+    exit 1
+  fi
+done
 
 echo "[4/5] mypy"
 mypy .

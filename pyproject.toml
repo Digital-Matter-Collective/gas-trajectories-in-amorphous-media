@@ -3,7 +3,7 @@ requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "gas-trajectories-in-kerogen"
+name = "gas-trajectories-in-amorphous-media"
 version = "1.0.0"
 description = "Trajectory analysis for gas transport in kerogen"
 readme = "README.md"
@@ -42,8 +42,8 @@ test = ["pytest>=9,<10"]
 visualization = ["vtk>=9.6,<9.7"]
 
 [project.urls]
-Repository = "https://github.com/Digital-Matter-Collective/gas-trajectories-in-kerogen"
-Issues = "https://github.com/Digital-Matter-Collective/gas-trajectories-in-kerogen/issues"
+Repository = "https://github.com/Digital-Matter-Collective/gas-trajectories-in-amorphous-media"
+Issues = "https://github.com/Digital-Matter-Collective/gas-trajectories-in-amorphous-media/issues"
 
 [project.scripts]
 gas-traj-data-manifest = "scripts.build_data_release_manifest:main"

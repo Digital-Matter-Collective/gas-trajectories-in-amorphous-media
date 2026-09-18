@@ -12,7 +12,9 @@ echo "[2/6] isort"
 isort --settings-path=pyproject.toml $PYTHON_FILES
 
 echo "[3/6] black"
-black --config=pyproject.toml $PYTHON_FILES
+for file in $PYTHON_FILES; do
+  black --config=pyproject.toml "$file" >/dev/null
+done
 
 echo "[4/6] Ruff check (no fixes)"
 ruff check $PYTHON_FILES
