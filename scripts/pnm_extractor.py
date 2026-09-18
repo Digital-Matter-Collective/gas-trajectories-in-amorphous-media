@@ -1,6 +1,7 @@
 import argparse
 import json
 import subprocess
+import time
 from os import listdir
 from os.path import isfile, join
 from pathlib import Path
@@ -19,7 +20,7 @@ if __name__ == '__main__':
     parser.add_argument(
         "pnm_path", type=Path, help="Data directory (contains pnm/)"
     )
-    
+
     parser.add_argument("extractor", type=Path, help="Path to extractor binary")
     parser.add_argument(
         "config", type=Path, help="Path to extractor config JSON"
@@ -49,7 +50,7 @@ if __name__ == '__main__':
     pattern = get_float_img_pattern()
 
     for i, file in enumerate(onlyfiles):
-
+        start_time = time.time()
         match = pattern.match(file)
         if not match:
             kprint("No match")
@@ -112,4 +113,6 @@ if __name__ == '__main__':
             break
         else:
             kprint(f"Sucssess: {pnm_pref}")
-            kprint(f"Ready index = {i + 1} from {len(onlyfiles)}")
+            kprint(
+                f"Ready index = {i + 1} from {len(onlyfiles)}, Elapsed time: {time.time() - start_time}s."
+            )

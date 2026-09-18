@@ -198,22 +198,22 @@ gas-traj-binarize-structures \
   "$DATA_DIR/structures" \
   "$DATA_DIR/bin_images" \
   "$DATA_DIR/raw_images" \
-  --dev 3 --ref-size 750 --num-workers 10
+  --ref-size 250 --num-workers 10
 
 gas-traj-distance-maps \
   "$DATA_DIR/structures" "$DATA_DIR/float_images" \
-  --ref-size 300
+  --ref-size 250
 
 # Without installing the package:
 python -m scripts.binarization_structs \
   "$DATA_DIR/structures" \
   "$DATA_DIR/bin_images" \
   "$DATA_DIR/raw_images" \
-  --dev 3 --ref-size 750 --num-workers 10
+  --ref-size 250 --num-workers 10
 
 python -m scripts.distance_map_structs \
   "$DATA_DIR/structures" "$DATA_DIR/float_images" \
-  --ref-size 300
+  --ref-size 250
 ```
 
 The first command writes `.npy` binary volumes and matching headerless
@@ -229,7 +229,7 @@ To build a distance map for one structure step, pass the number stored in its
 ```bash
 python -m scripts.distance_map_structs \
   "$DATA_DIR/structures" "$DATA_DIR/float_images" \
-  --ref-size 300 --index 25000
+  --ref-size 250 --index 25000
 ```
 
 Repeat `--index` (or use a comma-separated value) to process several explicit
