@@ -14,8 +14,12 @@ if __name__ == '__main__':
         description="Extract PNM from binary images"
     )
     parser.add_argument(
-        "path", type=Path, help="Data directory (contains raw_images/)"
+        "raw_img_path", type=Path, help="Data directory (contains raw_images/)"
     )
+    parser.add_argument(
+        "pnm_path", type=Path, help="Data directory (contains pnm/)"
+    )
+    
     parser.add_argument("extractor", type=Path, help="Path to extractor binary")
     parser.add_argument(
         "config", type=Path, help="Path to extractor config JSON"
@@ -25,11 +29,8 @@ if __name__ == '__main__':
 
     path_to_extractor = str(args.extractor)
     path_to_config = str(args.config)
-    default_path = str(args.path)
-
-    pnm_path = join(default_path, "pnm")
-    raw_img_path = join(default_path, "raw_images")
-    euler_path = join(default_path, "euler.json")
+    pnm_path = str(args.pnm_path)
+    raw_img_path = str(args.raw_img_path)
 
     Path(pnm_path).mkdir(parents=True, exist_ok=True)
 
