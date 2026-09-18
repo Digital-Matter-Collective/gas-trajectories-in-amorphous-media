@@ -198,30 +198,29 @@ gas-traj-binarize-structures \
   "$DATA_DIR/structures" \
   "$DATA_DIR/bin_images" \
   "$DATA_DIR/raw_images" \
-  --ref-size 250 --mode all --count-slices 500 --num-workers 10
+  --ref-size 250 --num-workers 10
 
 gas-traj-distance-maps \
   "$DATA_DIR/structures" "$DATA_DIR" \
-  --ref-size 250 --mode all --count-slices 500
+  --ref-size 250
 
 # Without installing the package:
 python -m scripts.binarization_structs \
   "$DATA_DIR/structures" \
   "$DATA_DIR/bin_images" \
   "$DATA_DIR/raw_images" \
-  --ref-size 250 --mode all --count-slices 500 --num-workers 10
+  --ref-size 250 --num-workers 10
 
 python -m scripts.distance_map_structs \
   "$DATA_DIR/structures" "$DATA_DIR" \
-  --ref-size 250 --mode all --count-slices 500
+  --ref-size 250
 ```
 
 The first command writes `.npy` binary volumes and matching headerless
 `.raw` volumes. The second writes `.npy` arrays under
 `$DATA_DIR/float_images`. Image resolution and cropping are controlled by
-`--ref-size` and `--dev`; preserve those values with final results.
-`distance_map_structs` also accepts `--mode part --count-slices N` to build a
-quick subset instead of the full run.
+`--ref-size` and `--dev`; preserve those values with final results. Both
+commands process every extracted structure `.npz` file in `structures_dir`.
 
 `gas-traj-binarize-structures`'s `--num-workers` and `--ref-size` combine
 non-trivially into peak memory — see §15 before raising either on a large

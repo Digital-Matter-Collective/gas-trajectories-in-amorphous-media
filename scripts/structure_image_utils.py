@@ -265,81 +265,6 @@ def select_indexes_from_available(
         raise ValueError(f"Unknown mode: {mode}")
 
 
-def parse_structure_file_info(path: Path) -> tuple[int, float] | None:
-    match = STRUCTURE_PATTERN.fullmatch(path.name)
-    if match is None:
-        return None
-
-    return int(match.group("step")), float(match.group("time_ps"))
-
-
-def list_available_structure_indexes(structures_dir: Path) -> list[int]:
-    indexes = []
-    for path in structures_dir.iterdir():
-        if not path.is_file():
-            continue
-        parsed = parse_structure_file_info(path)
-        if parsed is None:
-            continue
-        step, _ = parsed
-        indexes.append(step)
-
-    return sorted(dict.fromkeys(indexes))
-
-
-def generate_indexes_from_available_structures(
-    structures_dir: Path,
-    mode: str,
-    count_slices: int,
-) -> list[int]:
-    """Select at most `count_slices` indexes from the available structures.
-
-    `mode="all"` spreads the selection evenly and always includes the first
-    and last available index. `mode="part"` returns the first `count_slices`
-    available indexes.
-    """
-    if count_slices <= 0:
-        raise ValueError("--count-slices must be positive")
-
-    available_indexes = list_available_structure_indexes(structures_dir)
-    if not available_indexes:
-        raise RuntimeError(f"No structure .npz files found in {structures_dir}")
-
-    return select_indexes_from_available(
-        available_indexes,
-        count=count_slices,
-        mode=mode,
-    )
-
-
-def collect_processing_indexes(
-    structures_dir: Path,
-    indexes: list[str],
-    indexes_file: Path | None,
-    mode: str | None,
-    count_slices: int | None,
-) -> list[int] | None:
-    has_explicit_indexes = bool(indexes or indexes_file)
-    has_mode_indexes = bool(mode or count_slices is not None)
-
-    if has_explicit_indexes and has_mode_indexes:
-        raise ValueError(
-            "Use either --index/--indexes-file or --mode/--count-slices"
-        )
-    if has_explicit_indexes:
-        return collect_indexes(indexes, indexes_file)
-    if has_mode_indexes:
-        if mode is None or count_slices is None:
-            raise ValueError("--mode and --count-slices must be used together")
-        return generate_indexes_from_available_structures(
-            structures_dir=structures_dir,
-            mode=mode,
-            count_slices=count_slices,
-        )
-
-    return None
-
-
 def parse_indexes(values: Iterable[str] | None) -> list[int]:
     indexes: list[int] = []
     for value in values or []:
@@ -381,9 +306,7 @@ def image_base_name(
 
 def iter_structure_files(
     structures_dir: Path,
-    indexes: Iterable[int] | None = None,
 ) -> list[Path]:
-    index_set = set(indexes or [])
     files_by_step = []
 
     for path in structures_dir.iterdir():
@@ -393,8 +316,6 @@ def iter_structure_files(
         if not match:
             continue
         step = int(match.group("step"))
-        if index_set and step not in index_set:
-            continue
         files_by_step.append((step, path))
 
     return [path for _, path in sorted(files_by_step, key=lambda item: item[0])]

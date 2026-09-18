@@ -65,15 +65,12 @@ Installed command: `gas-traj-binarize-structures`.
 | `structures_dir` | required | Directory containing extracted structure `.npz` files. |
 | `output_bin_dir` | required | Directory for binary `.npy` volumes. |
 | `output_raw_dir` | required | Directory for matching headerless `.raw` volumes. |
-| `--index STEP` | optional, repeatable | Process a simulation step. Each occurrence may also contain comma-separated values. |
-| `--indexes-file FILE` | optional | Read comma- or whitespace-separated steps from a text file. May be combined with `--index`. |
-| `--mode {all,part}` | optional | Select from available structures: `all` spreads the selection and includes both ends; `part` takes the first entries. Must be used with `--count-slices` and cannot be mixed with explicit indexes. With no selector, all structures are processed. |
-| `--count-slices N` | required with `--mode` | Maximum number of available structures to select. |
 | `--ref-size N` | required | Voxel count along the shortest side of the cropped bounding box. It determines spatial resolution and has roughly quadratic influence on per-slice working memory. |
 | `--dev FLOAT` | `2.0` | Cell-cropping divisor passed to `Segmentator.cut_cell`; larger values retain a smaller central box. |
 | `--num-workers N` | `4` | Number of worker processes used to binarize slices. More workers increase both concurrency and peak memory. |
 | `--atom-chunk N` | `1024` | Atoms per pairwise-distance batch in each worker. Lower values reduce peak memory at some CPU cost. |
-| `--dry-run` | off | Print the selected structure steps and exit before producing images. |
+
+Every extracted structure `.npz` file in `structures_dir` is processed.
 
 ### `distance_map_structs`
 
@@ -83,13 +80,10 @@ Installed command: `gas-traj-distance-maps`.
 |---|---|---|
 | `structures_dir` | required | Directory containing extracted structure `.npz` files. |
 | `output_dir` | required | Base output directory; maps are written below `float_images/`. |
-| `--index STEP` | optional, repeatable | Process an explicit simulation step; comma-separated values are accepted. |
-| `--indexes-file FILE` | optional | Read explicit steps from a comma-/whitespace-separated text file. |
-| `--mode {all,part}` | optional | Available-structure selection mode. Must be paired with `--count-slices`, cannot be mixed with explicit indexes, and defaults to all structures when omitted. |
-| `--count-slices N` | required with `--mode` | Maximum number of structures selected by the mode. |
 | `--ref-size N` | required | Voxel count along the cropped box’s shortest side and therefore the map resolution control. |
 | `--dev FLOAT` | `4.0` | Cell-cropping divisor; larger values retain a smaller central box. |
-| `--dry-run` | off | Print selected steps without computing maps. |
+
+Every extracted structure `.npz` file in `structures_dir` is processed.
 
 ### `pnm_extractor`
 

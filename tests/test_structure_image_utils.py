@@ -9,7 +9,7 @@ from base.kerogendata import AtomData
 from scripts.dynamic_struct_extractor import build_indexes_from_args
 from scripts.structure_image_utils import (
     collect_indexes,
-    generate_indexes_from_available_structures,
+    iter_structure_files,
     load_structure,
     parse_indexes,
     save_structure,
@@ -219,21 +219,19 @@ def test_dynamic_extractor_excludes_first_frame_from_explicit_indexes(
     assert build_indexes_from_args(args) == [275000]
 
 
-def test_generate_indexes_from_available_structures_all_returns_exact_count(
+def test_iter_structure_files_returns_every_structure_sorted_by_step(
     tmp_path: Path,
 ) -> None:
-    available = list(range(0, 6561 * 250000, 250000))
-    from unittest.mock import patch
+    expected_names = [
+        "struct-num=25_time-ps=0.1.npz",
+        "struct-num=100_time-ps=0.4.npz",
+        "struct-num=300_time-ps=1.2.npz",
+    ]
+    for name in reversed(expected_names):
+        (tmp_path / name).touch()
+    (tmp_path / "indexes.txt").touch()
+    (tmp_path / "struct-num=50_time-ps=0.2.txt").touch()
 
-    with patch(
-        "scripts.structure_image_utils.list_available_structure_indexes",
-        return_value=available,
-    ):
-        indexes = generate_indexes_from_available_structures(
-            tmp_path, mode="all", count_slices=500
-        )
+    files = iter_structure_files(tmp_path)
 
-    assert len(indexes) == 500
-    assert len(set(indexes)) == 500
-    assert indexes[0] == available[0]
-    assert indexes[-1] == available[-1]
+    assert [path.name for path in files] == expected_names
