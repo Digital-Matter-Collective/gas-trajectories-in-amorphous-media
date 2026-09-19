@@ -203,7 +203,7 @@ gas-traj-binarize-structures \
 
 gas-traj-distance-maps \
   "$DATA_DIR/structures" "$DATA_DIR/float_images" \
-  --ref-size 250
+  --ref-size 600
 
 # Without installing the package:
 python -m scripts.binarization_structs \
@@ -214,7 +214,7 @@ python -m scripts.binarization_structs \
 
 python -m scripts.distance_map_structs \
   "$DATA_DIR/structures" "$DATA_DIR/float_images" \
-  --ref-size 250
+  --ref-size 600
 ```
 
 The first command writes `.npy` binary volumes and matching headerless
@@ -233,7 +233,7 @@ To build a distance map for one structure step, pass the number stored in its
 ```bash
 python -m scripts.distance_map_structs \
   "$DATA_DIR/structures" "$DATA_DIR/float_images" \
-  --ref-size 250 --index 25000
+  --ref-size 600 --index 25000
 ```
 
 Repeat `--index` (or use a comma-separated value) to process several explicit
@@ -299,7 +299,7 @@ python -m scripts.generate_pil_distr \
 Command-line parameters:
 
 | Parameter | Required | Description |
-|---|---|---|
+| --- | --- | --- |
 | `pnm_dir` | yes | Input directory containing the Statoil-format PNM files. Files belonging to one network must share a prefix and include `<prefix>_node2.dat` and `<prefix>_link1.dat`. The example uses `$DATA_DIR/pnm`. |
 | `output_dir` | yes | Existing directory in which the generated NumPy samples, fitted-distribution JSON files, cache-provenance metadata, and the `figs/` directory are written. The example uses `$DATA_DIR`. |
 | `--x-min FLOAT` | no | Minimum pore radius in nm used to generate and fit the pore-intersection-length sample. Only radii strictly greater than this value are included. The default and recommended value is `0.003`; the raw `radiuses.npy` cache and the throat-length fit are not filtered by this option. |
@@ -770,7 +770,7 @@ itself) and `STEP` subsamples molecules.
 ## 13. Paper artifact map
 
 | Artifact | Primary implementation | Reproduction status |
-|---|---|---|
+| --- | --- | --- |
 | Figs. 1–2 | §10 (`external_scripts/`, `vis_struct_trajectory`, `vis_atoms_struct`, `vis_struct_pnm`, `vis_slice_struct`, `vis_struct_example`) | Manual rendering; requires PDB, MD, and reference PNM data |
 | Fig. 3 | §11 (`corrfunc_krg_mol_plotter`, `corrfunc_struct_plotter`) | Requires publication trajectories and explicit final recipe |
 | Fig. 4 | §10 (`inv_plot`, `vis_traject`) | Confirmed working; panel composition remains manual |

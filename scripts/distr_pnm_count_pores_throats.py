@@ -25,7 +25,10 @@ def build_distributions(paths: List[Tuple[str, str]]) -> None:
         count_pores = []
         count_throats = []
         for _, file in sorted_lfiles:
-            r, tl = Reader.read_pnm_data(join(path_to_pnms, file)[:-10])
+            r, tl = Reader.read_pnm_data(
+                join(path_to_pnms, file)[:-10],
+                border=Reader.PNM_MIN_RADIUS_NM,
+            )
             count_pores.append(len(r))
             count_throats.append(len(tl))
 
