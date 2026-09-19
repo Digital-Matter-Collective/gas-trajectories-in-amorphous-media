@@ -106,7 +106,7 @@ Installed command: `gas-traj-generate-pil-distr`.
 |---|---|---|
 | `pnm_dir` | required | Input directory of Statoil-format PNMs. Each network prefix needs `_node2.dat` and `_link1.dat`. |
 | `output_dir` | required | Existing directory for NumPy samples, fitted-distribution JSON, provenance metadata, and `figs/`. |
-| `--x-min FLOAT` | `0.025` nm | Keep only pore radii strictly above this threshold when generating/fitting the pore-intersection-length sample. It does not filter the saved raw `radiuses.npy` or the throat-length fit. |
+| `--x-min FLOAT` | `0.003` nm | Recommended lower pore-radius threshold used when generating/fitting the pore-intersection-length sample. It does not filter the saved raw `radiuses.npy` or the throat-length fit. |
 
 ## Publication calculations
 
@@ -172,7 +172,7 @@ Installed command: `gas-traj-stationarity`.
 | `--anchor-time-ps FLOAT` | inferred | Time in ps at the mapping anchor. |
 | `--step-delta N` | inferred | Simulation-step difference between two frames. |
 | `--time-delta-ps FLOAT` | inferred | Time difference in ps corresponding to `--step-delta`. |
-| `--x-min FLOAT` | `0.015` nm | Keep only pore radii strictly greater than this threshold when collecting stationarity samples. Throat lengths are unaffected. |
+| `--x-min FLOAT` | `0.003` nm | Recommended lower pore-radius threshold for stationarity samples. Throat lengths are unaffected. |
 
 The four mapping values may override individual values inferred from the
 `--trajectory_path`. If no trajectory is supplied, all four must be supplied.
@@ -243,7 +243,7 @@ Installed command: `gas-traj-data-manifest`. It requires one subcommand.
 | `--pnm-step N` | `100` | Take every Nth PNM in sorted order, starting after the earliest N entries; this is a file-list stride, not a simulation-step value. |
 | `--bins N` | `50` | Histogram-bin count for pore-radius and throat-length densities. |
 | `--no-smooth` | off | Disable Savitzky–Golay smoothing of histogram densities. |
-| `--x-min FLOAT` | `0.025` nm | Strict lower X bound retained in displayed densities. |
+| `--x-min FLOAT` | `0.003` nm | Recommended strict lower X bound retained in displayed densities. |
 | `--x-max FLOAT` | `2.0` nm | Strict upper X bound retained in displayed densities. |
 | `--trajectory FILE` | `<pnm_dir>/../trj.gro` | GRO source used to infer PNM step-to-time conversion. |
 | `--anchor-step N` | inferred | Explicit mapping anchor step; same rules as `stationarity`. |
@@ -256,7 +256,7 @@ Installed command: `gas-traj-data-manifest`. It requires one subcommand.
 | Parameter | Required/default | Meaning |
 |---|---|---|
 | `path` | required | Data directory containing `radiuses.npy`, `pi_l_data.npy`, fitter JSON, and `pnm_distribution_units.json`; plots go to `figs/`. |
-| `--x-min FLOAT` | `0.025` nm | Minimum radius used while fitting/displaying P(r). |
+| `--x-min FLOAT` | `0.003` nm | Recommended minimum radius used while fitting/displaying P(r). |
 | `--r-points N` | `900` | Number of radius points in the fitted grid used for the heatmap. |
 | `--r-step N` | `1` | Stride through that radius grid when building conditional PIL curves. |
 | `--l-bins N` | `300` | Number of length-grid nodes used for the heatmap. |
@@ -351,7 +351,7 @@ Installed command: `gas-traj-simulate-pnm-trajectory`.
 | `--p FLOAT` | `0.5` | Probability of returning along walk history rather than exploring a neighbor. |
 | `--steps N` | `1000` | Number of simulated steps. |
 | `--radius FLOAT` | `0.02` nm | Render-only trajectory tube/point radius. |
-| `--min-radius FLOAT` | `0.0` nm | Remove pores with radius less than or equal to this threshold before walking. |
+| `--min-radius FLOAT` | `0.003` nm | Recommended threshold; remove pores with radius less than or equal to it before walking. |
 
 ### `vis_atoms_struct`
 

@@ -75,7 +75,7 @@ def plot_distributions(path_to_pnms: str, path_to_save_pil: str) -> None:
 
 
 def get_radiuses_lengths(
-    path_to_pnms: str,
+    path_to_pnms: str, radius_min: float = Reader.PNM_MIN_RADIUS_NM
 ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
     onlyfiles = [
         f for f in listdir(path_to_pnms) if isfile(join(path_to_pnms, f))
@@ -86,7 +86,7 @@ def get_radiuses_lengths(
     radiuses: npt.NDArray[np.float64] = np.array([])
     throat_lengths: npt.NDArray[np.float64] = np.array([])
     for f in onlyfiles:
-        r, t = Reader.read_pnm_data(f, border=0.003)
+        r, t = Reader.read_pnm_data(f, border=radius_min)
         radiuses = np.concatenate((radiuses, r))
         throat_lengths = np.concatenate((throat_lengths, t))
 
@@ -183,14 +183,14 @@ def generate_pil_distribution(
             kprint(
                 f"Cache {path_rads} does not match current PNM directory; recomputing"
             )
-        radiuses, throat_lengths = get_radiuses_lengths(path_to_pnms)
+        radiuses, throat_lengths = get_radiuses_lengths(
+            path_to_pnms, radius_min
+        )
         np.save(path_rads, radiuses)
         np.save(path_lens, throat_lengths)
         with open(path_units, "w") as f:
             json.dump({"length_unit": "nm"}, f)
         write_manifest(path_rads, pnm_metadata)
-
-    radiuses = radiuses[radiuses > radius_min]
 
     generator = PiLDistrGenerator()
 
@@ -270,7 +270,12 @@ def main() -> None:
     parser.add_argument(
         "output_dir", type=Path, help="Output directory for fitter JSON files"
     )
-    parser.add_argument("--x-min", type=float, default=0.025)
+    parser.add_argument(
+        "--x-min",
+        type=float,
+        default=Reader.PNM_MIN_RADIUS_NM,
+        help="Minimum pore radius in nm (default: 0.003)",
+    )
     args = parser.parse_args()
 
     generate_pil_distribution(

@@ -44,6 +44,7 @@ _TYPE_MAP = {'c': 0, 'o': 1, 'n': 2, 'h': 3, 's': 4}
 
 class Reader:
     PNM_M_TO_NM = 1e9
+    PNM_MIN_RADIUS_NM = 0.003
 
     @staticmethod
     def read_structures_by_num(
@@ -250,7 +251,9 @@ class Reader:
 
     @staticmethod
     def read_pnm_data(
-        path_to_pnm: str, scale: float = PNM_M_TO_NM, border: float = 0.0
+        path_to_pnm: str,
+        scale: float = PNM_M_TO_NM,
+        border: float = 0.0,
     ) -> Tuple[np.ndarray, np.ndarray]:
         path_to_node_2 = path_to_pnm + "_node2.dat"
         path_to_link_1 = path_to_pnm + "_link1.dat"

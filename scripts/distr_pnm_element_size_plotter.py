@@ -24,7 +24,7 @@ def compute_density(
     smooth: bool = True,
     window_length: int = 25,
     polyorder: int = 3,
-    x_min: float = 0.05,
+    x_min: float = Reader.PNM_MIN_RADIUS_NM,
     x_max: float = 2,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
@@ -95,8 +95,8 @@ def build_3d_distributions(
     pnm_step: int = 40,
     bins: int = 50,
     smooth: bool = True,
-    border: float = 0.0015,
-    x_min: float = 0.05,
+    border: float = Reader.PNM_MIN_RADIUS_NM,
+    x_min: float = Reader.PNM_MIN_RADIUS_NM,
     x_max: float = 2,
     scale: float = Reader.PNM_M_TO_NM,
 ) -> None:
@@ -283,7 +283,12 @@ if __name__ == '__main__':
     parser.add_argument("--pnm-step", type=int, default=100)
     parser.add_argument("--bins", type=int, default=50)
     parser.add_argument("--no-smooth", action="store_true")
-    parser.add_argument("--x-min", type=float, default=0.025)
+    parser.add_argument(
+        "--x-min",
+        type=float,
+        default=Reader.PNM_MIN_RADIUS_NM,
+        help="Strict lower display bound in nm (default: 0.003)",
+    )
     parser.add_argument("--x-max", type=float, default=2.0)
     parser.add_argument(
         "--trajectory",

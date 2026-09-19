@@ -16,7 +16,7 @@ def run(
     p: float = 0.5,
     steps: int = 1000,
     radius: float = 0.02,
-    min_radius: float = 0.0,
+    min_radius: float = Reader.PNM_MIN_RADIUS_NM,
 ) -> None:
     ps_type = 'uniform'  # poisson uniform
     ps = ps_generate(ps_type, mean_count=50)
@@ -72,11 +72,10 @@ def main() -> None:
     parser.add_argument(
         "--min-radius",
         type=float,
-        default=0.0,
+        default=Reader.PNM_MIN_RADIUS_NM,
         help=(
-            "Drop pores with radius <= this value before walking (filters "
-            "degenerate/boundary PNM entries; same convention as "
-            "generate_pil_distr's PNM reading)"
+            "Drop pores with radius <= this value before walking (default: "
+            "0.003 nm; same convention as read_pnm_data)"
         ),
     )
     args = parser.parse_args()

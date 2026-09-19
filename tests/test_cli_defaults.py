@@ -69,7 +69,7 @@ def test_structure_extraction_cli_uses_documented_defaults(
 
 @pytest.mark.parametrize(
     ("x_min_args", "expected_x_min"),
-    [([], 0.015), (["--x-min", "0.02"], 0.02)],
+    [([], 0.003), (["--x-min", "0.02"], 0.02)],
 )
 def test_stationarity_cli_accepts_mapping_without_trajectory_and_x_min(
     tmp_path: Path,

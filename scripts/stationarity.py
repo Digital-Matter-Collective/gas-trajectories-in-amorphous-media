@@ -865,7 +865,7 @@ def analysis(
     path_to_pnms: str,
     outdir: str,
     step_time_mapping: StepTimeMapping,
-    x_min: float = 0.015,
+    x_min: float = Reader.PNM_MIN_RADIUS_NM,
 ) -> None:
     onlyfiles = [
         f for f in listdir(path_to_pnms) if isfile(join(path_to_pnms, f))
@@ -970,8 +970,8 @@ def main() -> None:
     parser.add_argument(
         "--x-min",
         type=float,
-        default=0.015,
-        help="Keep pore radii strictly above this threshold in nm (default: 0.015)",
+        default=Reader.PNM_MIN_RADIUS_NM,
+        help="Keep pore radii strictly above this threshold in nm (default: 0.003)",
     )
     args = parser.parse_args()
 

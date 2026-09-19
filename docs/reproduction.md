@@ -289,11 +289,11 @@ pore-intersection-length, and throat-length samples and fitted distributions:
 
 ```bash
 gas-traj-generate-pil-distr \
-  "$DATA_DIR/pnm" "$DATA_DIR" --x-min 0.025
+  "$DATA_DIR/pnm" "$DATA_DIR" --x-min 0.003
 
 # Without installing the package (run from the repository root):
 python -m scripts.generate_pil_distr \
-  "$DATA_DIR/pnm" "$DATA_DIR" --x-min 0.025
+  "$DATA_DIR/pnm" "$DATA_DIR" --x-min 0.003
 ```
 
 Command-line parameters:
@@ -302,7 +302,7 @@ Command-line parameters:
 |---|---|---|
 | `pnm_dir` | yes | Input directory containing the Statoil-format PNM files. Files belonging to one network must share a prefix and include `<prefix>_node2.dat` and `<prefix>_link1.dat`. The example uses `$DATA_DIR/pnm`. |
 | `output_dir` | yes | Existing directory in which the generated NumPy samples, fitted-distribution JSON files, cache-provenance metadata, and the `figs/` directory are written. The example uses `$DATA_DIR`. |
-| `--x-min FLOAT` | no | Minimum pore radius in nm used to generate and fit the pore-intersection-length sample. Only radii strictly greater than this value are included. The default is `0.025`; the raw `radiuses.npy` cache and the throat-length fit are not filtered by this option. |
+| `--x-min FLOAT` | no | Minimum pore radius in nm used to generate and fit the pore-intersection-length sample. Only radii strictly greater than this value are included. The default and recommended value is `0.003`; the raw `radiuses.npy` cache and the throat-length fit are not filtered by this option. |
 | `-h`, `--help` | no | Print the command-line help and exit without fitting distributions. |
 
 The two positional parameters must be given in the order shown above. The
@@ -479,11 +479,11 @@ frames of the trajectory passed with `--trajectory_path`:
 ```bash
 gas-traj-stationarity \
   "$DATA_DIR/pnm" "$DATA_DIR/ks_stationarity" \
-  --trajectory_path "$DATA_DIR/trj.gro" --x-min 0.015
+  --trajectory_path "$DATA_DIR/trj.gro" --x-min 0.003
 # Without installing the package:
 python -m scripts.stationarity \
   "$DATA_DIR/pnm" "$DATA_DIR/ks_stationarity" \
-  --trajectory_path "$DATA_DIR/trj.gro" --x-min 0.015
+  --trajectory_path "$DATA_DIR/trj.gro" --x-min 0.003
 ```
 
 Or supply the complete linear mapping without reading a trajectory:
@@ -492,18 +492,18 @@ Or supply the complete linear mapping without reading a trajectory:
 gas-traj-stationarity \
   "$DATA_DIR/pnm" "$DATA_DIR/ks_stationarity" \
   --anchor-step 25000 --anchor-time-ps 50 \
-  --step-delta 250000 --time-delta-ps 500 --x-min 0.015
+  --step-delta 250000 --time-delta-ps 500 --x-min 0.003
 # Without installing the package:
 python -m scripts.stationarity \
   "$DATA_DIR/pnm" "$DATA_DIR/ks_stationarity" \
   --anchor-step 25000 --anchor-time-ps 50 \
-  --step-delta 250000 --time-delta-ps 500 --x-min 0.015
+  --step-delta 250000 --time-delta-ps 500 --x-min 0.003
 ```
 
 The command writes stationarity SVG files plus
 `stationarity_summary.csv` and `.json` to the explicit `outdir`.
-`--x-min` defaults to 0.015 nm and excludes pore radii at or below that
-threshold before the KS comparison; throat lengths are unaffected. The pre-equilibration frame was
+`--x-min` defaults to the recommended 0.003 nm and excludes pore radii at
+or below that threshold before the KS comparison; throat lengths are unaffected. The pre-equilibration frame was
 excluded during structure extraction; the first available PNM is the baseline.
 
 ## 10. Manual structure and trajectory visualization (Figures 1, 2, 4, 7, 10)
@@ -661,16 +661,16 @@ current pore's real radius, and the step between traps is the real throat
 length connecting them, with no independent P(r)/P(h) draw — use:
 
 ```bash
-gas-traj-simulate-pnm-trajectory "$DATA_DIR/pnm/<prefix>" --k 0.5 --p 0.5 --steps 1000
+gas-traj-simulate-pnm-trajectory "$DATA_DIR/pnm/<prefix>" --k 0.5 --p 0.5 --steps 1000 --min-radius 0.003
 ```
 
 `<prefix>` is the same PNM files prefix used elsewhere (without
 `_node1.dat` etc.). Because a real PNM is finite, once every real neighbor
 of the current pore has already been visited, the "explore further" step
 (probability `1 - p`) falls back to revisiting one of them instead of
-inventing a new trap. `--min-radius` drops pores at or below a radius
-threshold before walking, the same convention `read_pnm_data` uses
-elsewhere to filter degenerate/boundary PNM entries.
+inventing a new trap. `--min-radius` defaults to the recommended 0.003 nm
+and drops pores at or below that radius before walking, the same convention
+`read_pnm_data` uses elsewhere to filter degenerate/boundary PNM entries.
 
 The two simulators produce the same kind of trajectory from the same `k`/`p`
 algorithm, so picking between them is a fidelity-vs-cost trade-off, not a
@@ -702,7 +702,7 @@ trajectories; images are always inverted before computing C(t). `--max-t`,
 ```bash
 python -m scripts.distr_pnm_element_size_plotter \
   "$DATA_DIR/pnm" "$DATA_DIR/figs" \
-  --label CH4 --pnm-step 120 --x-min 0.05 --x-max 1.7
+  --label CH4 --pnm-step 120 --x-min 0.003 --x-max 1.7
 ```
 
 Pore/throat size distributions over the PNM time series; the step/time
@@ -711,7 +711,7 @@ with `--anchor-step`/`--anchor-time-ps`/`--step-delta`/`--time-delta-ps`
 (same convention as `gas-traj-stationarity`).
 
 ```bash
-python -m scripts.pil_plotter "$DATA_DIR" --x-min 0.025
+python -m scripts.pil_plotter "$DATA_DIR" --x-min 0.003
 ```
 
 Pore-intersection-length (PIL) heatmap from the fitted distributions written

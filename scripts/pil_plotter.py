@@ -10,6 +10,7 @@ from matplotlib.colors import PowerNorm
 from matplotlib.ticker import MaxNLocator
 from scipy.stats import exponweib
 
+from base.reader import Reader
 from processes.distribution_fitter import GammaFitter
 from processes.pil_distr_generator import PiLDistrGenerator
 from utils.logging_setup import setup_logging
@@ -372,7 +373,12 @@ if __name__ == "__main__":
     setup_logging()
     parser = argparse.ArgumentParser(description="Plot PIL distributions")
     parser.add_argument("path", type=Path, help="Data directory")
-    parser.add_argument("--x-min", type=float, default=0.025)
+    parser.add_argument(
+        "--x-min",
+        type=float,
+        default=Reader.PNM_MIN_RADIUS_NM,
+        help="Minimum pore radius in nm (default: 0.003)",
+    )
     parser.add_argument(
         "--r-points",
         type=int,
