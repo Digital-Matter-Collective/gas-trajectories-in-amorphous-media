@@ -53,7 +53,7 @@ Installed command: `gas-traj-extract-structures`.
 | `--auto-indexes` | off | Read available steps from the GRO headers, exclude the first frame unless `--include-first-step` is passed, and select the requested structures. Mutually exclusive with `--index`/`--indexes-file`. |
 | `--include-first-step` | off | Extract the very first trajectory frame too, instead of dropping it. It precedes equilibration, so downstream PNM/structure-derived analyses (including `gas-traj-stationarity`) expect it to be absent. |
 | `--mode {all,part}` | `all` | With `--auto-indexes`, `all` spreads steps from the first eligible frame through the last, including both endpoints; `part` takes frames consecutively beginning with the first eligible one. |
-| `--count-structures N` | required with `--auto-indexes` | Number of structures requested. Fewer are returned only if fewer eligible frames are available. |
+| `--count-structures N` | `100` | Number of structures requested with `--auto-indexes`. Fewer are returned only if fewer eligible frames are available. |
 | `--slice-len N` | `100` | Number of requested structures read in one batch; affects I/O batching, not the selected set. |
 | `--dry-run` | off | Print the generated/explicit indexes without extracting structures. |
 
@@ -66,8 +66,8 @@ Installed command: `gas-traj-binarize-structures`.
 | `structures_dir` | required | Directory containing extracted structure `.npz` files. |
 | `output_bin_dir` | required | Directory for binary `.npy` volumes. |
 | `output_raw_dir` | required | Directory for matching headerless `.raw` volumes. |
-| `--ref-size N` | required | Voxel count along the shortest side of the cropped bounding box. It determines spatial resolution and has roughly quadratic influence on per-slice working memory. |
-| `--dev FLOAT` | `2.0` | Cell-cropping divisor passed to `Segmentator.cut_cell`; larger values retain a smaller central box. |
+| `--ref-size N` | `600` | Voxel count along the shortest side of the cropped bounding box. It determines spatial resolution and has roughly quadratic influence on per-slice working memory. |
+| `--dev FLOAT` | `4.0` | Cell-cropping divisor passed to `Segmentator.cut_cell`; larger values retain a smaller central box. |
 | `--num-workers N` | `4` | Number of worker processes used to binarize slices. More workers increase both concurrency and peak memory. |
 
 Every extracted structure `.npz` file in `structures_dir` is processed.
@@ -93,7 +93,8 @@ This adapter has no installed command.
 
 | Parameter | Required/default | Meaning |
 |---|---|---|
-| `path` | required | Data directory containing `raw_images/`; generated networks are placed under its `pnm/` directory. |
+| `raw_img_path` | required | Directory containing the headerless `.raw` images produced by `binarization_structs`. |
+| `pnm_path` | required | Output directory for extracted pore networks; it is created if needed. |
 | `extractor` | required | Path to the external PNM-extractor executable, which is not included in this repository. |
 | `config` | required | JSON configuration passed to the external extractor. |
 
@@ -164,15 +165,17 @@ Installed command: `gas-traj-stationarity`.
 
 | Parameter | Required/default | Meaning |
 |---|---|---|
-| `path` | required | Data directory containing `pnm/`; output is written to `ks_stationarity/`. |
-| `--trajectory FILE` | `<path>/trj.gro` | GRO trajectory whose first two frames provide an affine simulation-step/time mapping. |
+| `pnm_path` | required | Directory containing the Statoil-format PNM files (`*_link1.dat` and their companion files). |
+| `outdir` | required | Directory for stationarity SVG, text, CSV, and JSON outputs; it is created if needed. |
+| `--trajectory_path FILE` | optional | GRO trajectory whose first two frames provide an affine simulation-step/time mapping. |
 | `--anchor-step N` | inferred | Simulation step at the mapping anchor. |
 | `--anchor-time-ps FLOAT` | inferred | Time in ps at the mapping anchor. |
 | `--step-delta N` | inferred | Simulation-step difference between two frames. |
 | `--time-delta-ps FLOAT` | inferred | Time difference in ps corresponding to `--step-delta`. |
+| `--x-min FLOAT` | `0.015` nm | Keep only pore radii strictly greater than this threshold when collecting stationarity samples. Throat lengths are unaffected. |
 
 The four mapping values may override individual values inferred from the
-trajectory. If the trajectory is unavailable, all four must be supplied.
+`--trajectory_path`. If no trajectory is supplied, all four must be supplied.
 
 ### `build_data_release_manifest`
 

@@ -73,8 +73,18 @@ def main() -> None:
     parser.add_argument(
         "output_raw_dir", type=Path, help="Output raw image directory"
     )
-    parser.add_argument("--ref-size", type=int, required=True)
-    parser.add_argument("--dev", type=float, default=2.0)
+    parser.add_argument(
+        "--ref-size",
+        type=int,
+        default=600,
+        help="Voxel count along the shortest cropped side (default: 600)",
+    )
+    parser.add_argument(
+        "--dev",
+        type=float,
+        default=4.0,
+        help="Cell-cropping divisor (default: 4)",
+    )
     parser.add_argument("--num-workers", type=int, default=4)
     args = parser.parse_args()
 

@@ -179,17 +179,18 @@ Preview automatically sampled structure steps before writing files:
 ```bash
 gas-traj-extract-structures \
   "$INPUT_GRO" "$DATA_DIR/structures" \
-  --auto-indexes --mode all --count-structures 500 --dry-run
+  --auto-indexes --dry-run
 # Without installing the package:
 python -m scripts.dynamic_struct_extractor \
   "$INPUT_GRO" "$DATA_DIR/structures" \
-  --auto-indexes --mode all --count-structures 500 --dry-run
+  --auto-indexes --dry-run
 ```
 
-Then remove `--dry-run` to extract the structures. The first trajectory frame
-is always excluded. `mode=all` spreads indexes evenly from the second frame to
-the last available frame, including both of those endpoints. The returned
-count equals `--count-structures` unless fewer eligible frames are available.
+Then remove `--dry-run` to extract the structures. By default,
+`--auto-indexes` selects 100 structures with `--mode all`: indexes are spread
+evenly from the second frame to the last available frame, including both
+endpoints. The first trajectory frame remains excluded. Override
+`--count-structures` or `--mode` when another sampling strategy is needed.
 
 Build binary images and distance maps:
 
@@ -198,7 +199,7 @@ gas-traj-binarize-structures \
   "$DATA_DIR/structures" \
   "$DATA_DIR/bin_images" \
   "$DATA_DIR/raw_images" \
-  --ref-size 250 --num-workers 10
+  --dev 4 --ref-size 600 --num-workers 10
 
 gas-traj-distance-maps \
   "$DATA_DIR/structures" "$DATA_DIR/float_images" \
@@ -209,7 +210,7 @@ python -m scripts.binarization_structs \
   "$DATA_DIR/structures" \
   "$DATA_DIR/bin_images" \
   "$DATA_DIR/raw_images" \
-  --ref-size 250 --num-workers 10
+  --dev 4 --ref-size 600 --num-workers 10
 
 python -m scripts.distance_map_structs \
   "$DATA_DIR/structures" "$DATA_DIR/float_images" \
@@ -222,6 +223,9 @@ directory (`$DATA_DIR/float_images` in the example). Image resolution and
 cropping are controlled by `--ref-size` and `--dev`; preserve those values
 with final results. Both commands process every extracted structure `.npz`
 file in `structures_dir`.
+
+The binarization defaults are `--dev 4` and `--ref-size 600`; they are
+written explicitly above to make the reproduction parameters visible.
 
 To build a distance map for one structure step, pass the number stored in its
 `struct-num=...` filename:
@@ -249,12 +253,15 @@ no installed console script for it (not registered in `pyproject.toml`); run
 it as a module, pointing at your own extractor binary and its JSON config:
 
 ```bash
-python -m scripts.pnm_extractor "$DATA_DIR" "$EXTRACTOR_PATH" "$EXTRACTOR_CONFIG"
+python -m scripts.pnm_extractor \
+  "$DATA_DIR/raw_images" "$DATA_DIR/pnm" \
+  "$EXTRACTOR_PATH" "$EXTRACTOR_CONFIG"
 ```
 
-It reads `.raw` volumes from `$DATA_DIR/raw_images` (written by
-`gas-traj-binarize-structures`) and writes one PNM per structure step under
-`$DATA_DIR/pnm`, named with the pattern expected below.
+The first two positional arguments are the input and output directories,
+respectively. The adapter reads `.raw` volumes from `$DATA_DIR/raw_images`
+(written by `gas-traj-binarize-structures`) and writes one PNM per structure
+step under `$DATA_DIR/pnm`, named with the pattern expected below.
 
 An alternative extractor can be used if each network is written under
 `$DATA_DIR/pnm` with a common prefix and these Statoil files:
@@ -464,44 +471,40 @@ python -m scripts.trap_distr_builder \
 
 ## 9. Table III: PNM stationarity
 
-The stationarity command reads `$DATA_DIR/pnm/*_link1.dat` and infers the
-simulation-step-to-time mapping from the first two frames in
-`$DATA_DIR/trj.gro`:
-
-```bash
-gas-traj-stationarity "$DATA_DIR"
-# Without installing the package:
-python -m scripts.stationarity "$DATA_DIR"
-```
-
-To use another trajectory:
+The stationarity command reads `*_link1.dat` files from the first positional
+argument, `pnm_path`, and writes results to the second positional argument,
+`outdir`. It infers the simulation-step-to-time mapping from the first two
+frames of the trajectory passed with `--trajectory_path`:
 
 ```bash
 gas-traj-stationarity \
-  "$DATA_DIR" --trajectory "$INPUT_GRO"
+  "$DATA_DIR/pnm" "$DATA_DIR/ks_stationarity" \
+  --trajectory_path "$DATA_DIR/trj.gro" --x-min 0.015
 # Without installing the package:
 python -m scripts.stationarity \
-  "$DATA_DIR" --trajectory "$INPUT_GRO"
+  "$DATA_DIR/pnm" "$DATA_DIR/ks_stationarity" \
+  --trajectory_path "$DATA_DIR/trj.gro" --x-min 0.015
 ```
 
 Or supply the complete linear mapping without reading a trajectory:
 
 ```bash
 gas-traj-stationarity \
-  "$DATA_DIR" \
+  "$DATA_DIR/pnm" "$DATA_DIR/ks_stationarity" \
   --anchor-step 25000 --anchor-time-ps 50 \
-  --step-delta 250000 --time-delta-ps 500
+  --step-delta 250000 --time-delta-ps 500 --x-min 0.015
 # Without installing the package:
 python -m scripts.stationarity \
-  "$DATA_DIR" \
+  "$DATA_DIR/pnm" "$DATA_DIR/ks_stationarity" \
   --anchor-step 25000 --anchor-time-ps 50 \
-  --step-delta 250000 --time-delta-ps 500
+  --step-delta 250000 --time-delta-ps 500 --x-min 0.015
 ```
 
-The command writes stationarity SVG files and
-`ks_stationarity/stationarity_summary.csv` and `.json`. The pre-equilibration
-frame was excluded during structure extraction; the first available PNM is
-the baseline.
+The command writes stationarity SVG files plus
+`stationarity_summary.csv` and `.json` to the explicit `outdir`.
+`--x-min` defaults to 0.015 nm and excludes pore radii at or below that
+threshold before the KS comparison; throat lengths are unaffected. The pre-equilibration frame was
+excluded during structure extraction; the first available PNM is the baseline.
 
 ## 10. Manual structure and trajectory visualization (Figures 1, 2, 4, 7, 10)
 
@@ -836,7 +839,8 @@ Per-command notes:
   `Parallel`. `errors_params.py`'s `--n-jobs` defaults to `-1` (all logical
   cores); pass a smaller value to leave headroom on a shared machine.
 - `gas-traj-binarize-structures` (§3, `binarization_structs.py`) defaults to
-  `--num-workers 4` and drives `Segmentator.binarize` in
+  `--dev 4`, `--ref-size 600`, and `--num-workers 4`, and drives
+  `Segmentator.binarize` in
   `processes/segmentation.py` with the `PROCESS_CHUNK` algorithm: each
   worker is a separate OS process. Per-slice work is a `scipy.spatial.
   cKDTree.query(..., k=1, distance_upper_bound=radius)` — one vectorized,

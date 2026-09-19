@@ -148,13 +148,15 @@ def main() -> None:
         choices=["all", "part"],
         default="all",
         help=(
-            "Selection mode for --auto-indexes: evenly spread or first part."
+            "Selection mode for --auto-indexes: evenly spread or first part "
+            "(default: all)."
         ),
     )
     parser.add_argument(
         "--count-structures",
         type=int,
-        help="How many structures to request in --auto-indexes mode.",
+        default=100,
+        help="How many structures to request in --auto-indexes mode (default: 100).",
     )
     parser.add_argument(
         "--slice-len",
@@ -169,8 +171,6 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    if args.auto_indexes and args.count_structures is None:
-        parser.error("--auto-indexes requires --count-structures")
     if args.auto_indexes and (args.index or args.indexes_file):
         parser.error("Use either --auto-indexes or --index/--indexes-file")
 

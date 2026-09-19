@@ -15,10 +15,10 @@ if __name__ == '__main__':
         description="Extract PNM from binary images"
     )
     parser.add_argument(
-        "raw_img_path", type=Path, help="Data directory (contains raw_images/)"
+        "raw_img_path", type=Path, help="Directory containing input .raw images"
     )
     parser.add_argument(
-        "pnm_path", type=Path, help="Data directory (contains pnm/)"
+        "pnm_path", type=Path, help="Output directory for extracted PNMs"
     )
 
     parser.add_argument("extractor", type=Path, help="Path to extractor binary")

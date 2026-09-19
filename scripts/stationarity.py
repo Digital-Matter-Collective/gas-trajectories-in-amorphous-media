@@ -865,6 +865,7 @@ def analysis(
     path_to_pnms: str,
     outdir: str,
     step_time_mapping: StepTimeMapping,
+    x_min: float = 0.015,
 ) -> None:
     onlyfiles = [
         f for f in listdir(path_to_pnms) if isfile(join(path_to_pnms, f))
@@ -879,7 +880,7 @@ def analysis(
 
     for step, file in sorted_lfiles:
         radiuses, throat_lengths = Reader.read_pnm_data(
-            join(path_to_pnms, file[:-10]), border=0.015
+            join(path_to_pnms, file[:-10]), border=x_min
         )
         time = step_time_mapping.time_ps(step)
 
@@ -950,7 +951,7 @@ def analysis(
     kprint(f"Saved stationarity summary: {json_path}")
 
 
-if __name__ == "__main__":
+def main() -> None:
     setup_logging()
     parser = argparse.ArgumentParser(
         description="KS-based stationarity analysis"
@@ -960,17 +961,22 @@ if __name__ == "__main__":
     parser.add_argument(
         "--trajectory_path",
         type=Path,
-        help="GRO trajectory used to infer step/time mapping (default: <path>/trj.gro)",
+        help="GRO trajectory used to infer step/time mapping",
     )
     parser.add_argument("--anchor-step", type=int)
     parser.add_argument("--anchor-time-ps", type=float)
     parser.add_argument("--step-delta", type=int)
     parser.add_argument("--time-delta-ps", type=float)
+    parser.add_argument(
+        "--x-min",
+        type=float,
+        default=0.015,
+        help="Keep pore radii strictly above this threshold in nm (default: 0.015)",
+    )
     args = parser.parse_args()
 
-    trajectory_path = Path(args.trajectory_path)
     step_time_mapping = resolve_step_time_mapping(
-        trajectory_path,
+        args.trajectory_path,
         anchor_step=args.anchor_step,
         anchor_time_ps=args.anchor_time_ps,
         step_delta=args.step_delta,
@@ -981,4 +987,9 @@ if __name__ == "__main__":
         str(args.pnm_path),
         str(args.outdir),
         step_time_mapping,
+        x_min=args.x_min,
     )
+
+
+if __name__ == "__main__":
+    main()
