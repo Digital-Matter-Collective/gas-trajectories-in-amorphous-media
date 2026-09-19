@@ -76,19 +76,6 @@ class GammaFitter:
     def fit(self, data: NPFArray) -> None:
         assert self.params is None
         self.params = gamma.fit(data)
-        # x = data[:, 0]
-        # p = data[:, 1]
-        # dx = x[1] - x[0]
-        # csum = np.cumsum(p * dx)
-        # count_points = 100_000
-        # unif_p = np.random.uniform(0, 1, size=count_points)
-        # ndata = np.array(
-        #     [GammaCurveFitter.interp(sp, x, csum) for sp in unif_p],
-        #     dtype=f32,
-        # )
-
-        # params = gamma.fit(ndata)
-        # plt.plot(x, gamma.pdf(x,fdata.params[0],loc=fdata.params[1], scale=fdata.params[2]))
 
     @staticmethod
     def interp(val: float, x: NPFArray, csum: NPFArray) -> float:
