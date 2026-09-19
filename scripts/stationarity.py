@@ -862,12 +862,10 @@ def run_stationarity_pipeline(
 
 
 def analysis(
-    main_path: str,
-    pnm_dir: str,
-    oputput_dir: str,
+    path_to_pnms: str,
+    outdir: str,
     step_time_mapping: StepTimeMapping,
 ) -> None:
-    path_to_pnms = join(main_path, pnm_dir)
     onlyfiles = [
         f for f in listdir(path_to_pnms) if isfile(join(path_to_pnms, f))
     ]
@@ -889,7 +887,6 @@ def analysis(
         samples_r[time] = radiuses
         kprint(f"Step: {step} Time: {time}")
 
-    outdir = Path(main_path) / oputput_dir
     summary_records = []
 
     # If distributions are heavy-tailed, consider transform="log1p" (especially if zeros possible)
@@ -958,9 +955,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="KS-based stationarity analysis"
     )
-    parser.add_argument("path", type=Path, help="Data directory")
+    parser.add_argument("pnm_path", type=Path, help="Input PNM data directory")
+    parser.add_argument("outdir", type=Path, help="Output data directory")
     parser.add_argument(
-        "--trajectory",
+        "--trajectory_path",
         type=Path,
         help="GRO trajectory used to infer step/time mapping (default: <path>/trj.gro)",
     )
@@ -970,7 +968,7 @@ if __name__ == "__main__":
     parser.add_argument("--time-delta-ps", type=float)
     args = parser.parse_args()
 
-    trajectory_path = args.trajectory or args.path / "trj.gro"
+    trajectory_path = Path(args.trajectory_path)
     step_time_mapping = resolve_step_time_mapping(
         trajectory_path,
         anchor_step=args.anchor_step,
@@ -980,8 +978,7 @@ if __name__ == "__main__":
     )
     kprint(f"Step/time mapping: {step_time_mapping}")
     analysis(
-        str(args.path),
-        "pnm",
-        "ks_stationarity",
+        str(args.pnm_path),
+        str(args.outdir),
         step_time_mapping,
     )
