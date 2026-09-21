@@ -702,7 +702,7 @@ trajectories; images are always inverted before computing C(t). `--max-t`,
 ```bash
 python -m scripts.distr_pnm_element_size_plotter \
   "$DATA_DIR/pnm" "$DATA_DIR/figs" \
-  --label CH4 --pnm-step 120 --x-min 0.003 --x-max 1.7
+  --label CH4 --pnm-step 22 --x-min 0.003 --x-max 2 --length-max-of-range 1. --radius-max-of-range 0.2
 ```
 
 Pore/throat size distributions over the PNM time series; the step/time
@@ -756,16 +756,27 @@ gas-traj-pnm-pore-throat-distr \
 Plots pore/throat count statistics across one or more PNM datasets, same
 supplementary scope and display-only behavior as above.
 
+For example, to compare CH4 and H2 datasets:
+
 ```bash
+# Installed command:
 gas-traj-msdt-builder \
-  --trj "$CH4_DIR/:type1-300K-CH4:1" \
-  --trj "$H2_DIR/:type1-300K-H2:2"
+  --trj "$CH4_DIR/:CH_4:1" \
+  --trj "$H2_DIR/:H_2:2"
+
+# Without installing the package:
+python -m scripts.msdt_builder \
+  --trj "$CH4_DIR/:CH_4:1" \
+  --trj "$H2_DIR/:H_2:2"
 ```
 
 Plots the time-averaged mean-square displacement (log-log) for one or more
 gas datasets on a shared axis. `--trj` takes `DATA_DIR:LABEL:STEP`, where
 `DATA_DIR` is a data directory containing `trj.gro` (not the trajectory file
-itself) and `STEP` subsamples molecules.
+itself) and `STEP` subsamples molecules. Repeat `--trj` for every dataset:
+the second `PATH:LABEL:STEP` value cannot be supplied as an unflagged
+positional argument. `DATA_DIR` must end with `/`; the example adds it after
+each environment variable.
 
 ## 13. Paper artifact map
 
@@ -834,7 +845,7 @@ two layers will oversubscribe the machine together.
 
 Per-command notes:
 
-- `gas-traj-dm-search` (§6, `errors_params.py`) and the internal `π(l)`
+- `gas-traj-dm-search` (§6, `errors_params.py`) and the internal `\pi(l)`
   sampler in `processes/pil_distr_generator.py` parallelize with joblib
   `Parallel`. `errors_params.py`'s `--n-jobs` defaults to `-1` (all logical
   cores); pass a smaller value to leave headroom on a shared machine.

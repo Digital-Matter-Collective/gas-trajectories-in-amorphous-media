@@ -26,6 +26,7 @@ def compute_density(
     polyorder: int = 3,
     x_min: float = Reader.PNM_MIN_RADIUS_NM,
     x_max: float = 2,
+    max_of_range: float = 0.2,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Строит нормированную гистограмму-плотность.
@@ -33,7 +34,9 @@ def compute_density(
         x  - центры бинов
         pn - значения плотности
     """
-    p, bb = np.histogram(data, bins=bins, density=False)
+    p, bb = np.histogram(
+        data, bins=bins, range=(0, max_of_range), density=False
+    )
     xdel = bb[1] - bb[0]
     x = bb[:-1] + 0.5 * xdel
     pn = p / np.sum(p * xdel)
@@ -45,11 +48,6 @@ def compute_density(
             pn = savgol_filter(pn, wl, polyorder)
             pn[pn < 0] = 0.0
 
-    # Author decision 2026-09-02: the trailing 10 bins are a
-    # not-useful-for-visualization tail; dropping them without renormalizing
-    # is intentional here, not a bug.
-    x = x[:-10]
-    pn = pn[:-10]
     mask = np.logical_and(x > x_min, x < x_max)
     x = x[mask]
     pn = pn[mask]
@@ -99,6 +97,8 @@ def build_3d_distributions(
     x_min: float = Reader.PNM_MIN_RADIUS_NM,
     x_max: float = 2,
     scale: float = Reader.PNM_M_TO_NM,
+    length_max_of_range: float = 2.0,
+    radius_max_of_range: float = 0.2,
 ) -> None:
     fig = plt.figure(figsize=(11, 8))
     ax = fig.add_subplot(111, projection="3d")
@@ -137,6 +137,7 @@ def build_3d_distributions(
             smooth=smooth,
             x_min=x_min,
             x_max=x_max,
+            max_of_range=length_max_of_range,
         )
         y_l = np.full_like(x_l, time_us, dtype=float)
         ax.plot(
@@ -149,7 +150,7 @@ def build_3d_distributions(
         )
         ax.text(
             x_l[-1] - 0.01,  # небольшой сдвиг вправо
-            y_l[-1] - 0.5,  # то же время
+            y_l[-1] - 0.6,  # то же время
             p_l[-1] + 0.5,  # конец кривой по z
             rf"{time_us:.2f}",
             zdir=(1, -0.5, 0),  # размещаем текст в плоскости x-z
@@ -167,6 +168,7 @@ def build_3d_distributions(
             smooth=smooth,
             x_min=x_min,
             x_max=x_max,
+            max_of_range=radius_max_of_range,
         )
         p_r = p_r * 0.5
         y_r = np.full_like(x_r, time_us, dtype=float)
@@ -222,7 +224,7 @@ def build_3d_distributions(
     res_xlabels = []
     kprint("xlabels=", list(enumerate(xlabels)))
     for i, x in enumerate(xlabels):
-        if i in [4, 5, 6, 7]:
+        if i in [3, 4]:
             x._text = ""
         res_xlabels.append(x)
 
@@ -254,6 +256,8 @@ def build_3d_distributions(
     # ax.xaxis._axinfo["juggled"] = (1, 0, 2)
     # ax.yaxis._axinfo["juggled"] = (0, 1, 2)
     # ax.zaxis._axinfo["juggled"] = (0, 2, 1)
+
+    ax.set_ylim(time_us * 0.1, time_us * 1.05)
 
     ax.xaxis._axinfo["juggled"] = (1, 0, 2)
     ax.yaxis._axinfo["juggled"] = (0, 1, 2)
@@ -291,6 +295,26 @@ if __name__ == '__main__':
     )
     parser.add_argument("--x-max", type=float, default=2.0)
     parser.add_argument(
+        "--length-max-of-range",
+        type=float,
+        default=2.0,
+        help=(
+            "Fixed upper bound (nm) of the P(h) (throat length) histogram "
+            "range; bins always span 0..this value regardless of the "
+            "data's own max."
+        ),
+    )
+    parser.add_argument(
+        "--radius-max-of-range",
+        type=float,
+        default=0.2,
+        help=(
+            "Fixed upper bound (nm) of the P(r) (pore radius) histogram "
+            "range; bins always span 0..this value regardless of the "
+            "data's own max."
+        ),
+    )
+    parser.add_argument(
         "--trajectory",
         type=Path,
         help=(
@@ -321,4 +345,6 @@ if __name__ == '__main__':
         smooth=not args.no_smooth,
         x_min=args.x_min,
         x_max=args.x_max,
+        length_max_of_range=args.length_max_of_range,
+        radius_max_of_range=args.radius_max_of_range,
     )

@@ -245,6 +245,8 @@ Installed command: `gas-traj-data-manifest`. It requires one subcommand.
 | `--no-smooth` | off | Disable Savitzky–Golay smoothing of histogram densities. |
 | `--x-min FLOAT` | `0.003` nm | Recommended strict lower X bound retained in displayed densities. |
 | `--x-max FLOAT` | `2.0` nm | Strict upper X bound retained in displayed densities. |
+| `--length-max-of-range FLOAT` | `2.0` nm | Fixed upper bound of the P(h) (throat length) histogram range; bins always span `0..this value` regardless of the data's own max. |
+| `--radius-max-of-range FLOAT` | `0.2` nm | Fixed upper bound of the P(r) (pore radius) histogram range; bins always span `0..this value` regardless of the data's own max. |
 | `--trajectory FILE` | `<pnm_dir>/../trj.gro` | GRO source used to infer PNM step-to-time conversion. |
 | `--anchor-step N` | inferred | Explicit mapping anchor step; same rules as `stationarity`. |
 | `--anchor-time-ps FLOAT` | inferred | Explicit mapping anchor time in ps. |
@@ -301,6 +303,17 @@ Installed command: `gas-traj-msdt-builder`.
 | Parameter | Required/default | Meaning |
 |---|---|---|
 | `--trj PATH:LABEL:STEP` | required, repeatable | Data-directory prefix, plot label, and positive molecule stride. The current implementation appends `trj.gro` and `msd_time_avarage.csv` directly, so `PATH` must end with `/`. Repeat to overlay datasets. |
+
+Each dataset requires its own `--trj` flag:
+
+```bash
+python -m scripts.msdt_builder \
+  --trj "$CH4_DIR/:CH_4:1" \
+  --trj "$H2_DIR/:H_2:2"
+```
+
+The form `--trj FIRST SECOND` is invalid because `SECOND` is then parsed as
+an unrecognized positional argument.
 
 ### `inv_plot`
 
