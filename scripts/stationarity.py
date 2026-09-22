@@ -619,7 +619,7 @@ def plot_ecdf_overlay(
                     edgecolor="none",
                     alpha=0.8,
                 ),
-                fontsize=LEGEND_FONTSIZE+4,
+                fontsize=LEGEND_FONTSIZE + 4,
             )
 
     ax.set_title(title)
