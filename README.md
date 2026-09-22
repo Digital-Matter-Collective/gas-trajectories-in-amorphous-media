@@ -5,10 +5,12 @@ in dynamic kerogen pore structures. It implements trapping-event classifiers,
 synthetic validation experiments, molecular-dynamics trajectory preprocessing,
 and downstream pore-network statistics used in the accompanying research.
 
-The project is under active preparation for its first public research release.
-The code is usable, but the publication data archive and reference pore-network
-models (PNMs) are not available yet. Exact reproduction of every paper figure
-therefore remains pending.
+The code and the accompanying research-data archive (molecular-dynamics
+trajectories and reference pore-network models, PNMs, for CH4/H2 in type-I
+kerogen at 300 K) are both published on Zenodo; see "Citation and license"
+below for their DOIs. A follow-up release with additional fixes is in
+preparation and will supersede the current release under the same concept
+DOIs once published.
 
 ## Scientific scope
 
@@ -223,7 +225,7 @@ If you use the software or its methods, cite it using the concept DOI in
 will continue to resolve after new releases are published:
 
 > Ananev, A., Potapova, M., Vostroknutov, T., Kondratyuk, N., & Khlyupin, A.
-> (2026). *gas-trajectories-in-amorphous-media* (Version 1.1.0) [Computer software].
+> (2026). *gas-trajectories-in-amorphous-media* (Version 1.0.0) [Computer software].
 > Zenodo. <https://doi.org/10.5281/zenodo.22309111>
 
 GitHub's **Cite this repository** menu reads `CITATION.cff` and can export

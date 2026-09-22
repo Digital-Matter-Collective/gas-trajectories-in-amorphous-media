@@ -2,13 +2,15 @@
 
 This guide records the current command sequence from molecular-dynamics
 trajectories to publication-facing summaries. It distinguishes supported,
-deterministic commands from stages that still depend on unpublished data or
-manual rendering.
+deterministic commands from stages that still depend on manual rendering.
 
-Exact reproduction is not yet possible from a clean checkout because the
-publication trajectory data, fitted pore-network distributions, and reference
-PNMs have not been released. Commands below can be used with compatible local
-data. The future data archive must provide the missing inputs and checksums.
+Exact reproduction from a clean checkout requires the published data archive
+(molecular-dynamics trajectories, fitted pore-network distributions, and
+reference PNMs), available on Zenodo under a CC-BY-4.0 license — see the
+"Citation and license" section of the top-level README for its DOI. Extract
+the archive and verify it with `python -m scripts.build_data_release_manifest
+verify <extracted_dir>` before running the commands below against it; the
+manifest inside the archive records the missing inputs and checksums.
 
 **Library API vs. publication scripts.** `base/`, `processes/`, `utils/`, and
 `visualizer/` are the importable library: no CLI of their own, no filesystem
