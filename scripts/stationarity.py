@@ -609,11 +609,17 @@ def plot_ecdf_overlay(
             ax.vlines(x_star, min(y1, y2), max(y1, y2), linewidth=2)
             ax.annotate(
                 f"D = {D_obs:.4g}",
-                xy=(x_star, 0.5 * (y1 + y2)),
-                xytext=(8, 8),
-                textcoords="offset points",
+                xy=(0.02, 0.42),
+                xycoords="axes fraction",
                 ha="left",
-                va="top",
+                va="center",
+                bbox=dict(
+                    boxstyle="round,pad=0.3",
+                    facecolor="white",
+                    edgecolor="none",
+                    alpha=0.8,
+                ),
+                fontsize=LEGEND_FONTSIZE+4,
             )
 
     ax.set_title(title)

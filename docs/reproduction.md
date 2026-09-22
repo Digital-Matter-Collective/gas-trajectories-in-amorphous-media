@@ -692,7 +692,7 @@ Kerogen-molecule correlation function, for one molecule extracted with
 python -m scripts.corrfunc_struct_plotter \
   "$DATA_DIR/bin_images" "$DATA_DIR/ct_pore.npy" "$DATA_DIR/figs/corrfunc.svg" \
   --trj "$CH4_DIR/trj.gro:CH4" --trj "$H2_DIR/trj.gro:H2" \
-  --max-t 2.8
+  --max-t 2.5 --x-max 20
 ```
 
 Time-averaged structural autocorrelation C(t) across one or more gas
