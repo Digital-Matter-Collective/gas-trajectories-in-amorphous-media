@@ -1,8 +1,10 @@
 import argparse
 import csv
+import hashlib
 import json
 import os
 import random
+import subprocess
 from pathlib import Path
 from typing import Any, Callable, List, cast
 
@@ -519,12 +521,46 @@ def _load_or_initialize_checkpoint(
     return state
 
 
+CALIBRATION_INPUT_FILES = (
+    "pi_l_gamma_fitter.json",
+    "throat_lengths_weibull_fitter.json",
+    "radiuses.npy",
+)
+
+
+def _compute_code_version() -> str:
+    """Return the current commit hash of the repository producing this data."""
+    repo_root = Path(__file__).resolve().parent.parent
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=repo_root,
+        capture_output=True,
+        check=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def _compute_input_fingerprint(main_path: Path) -> dict[str, str]:
+    """Hash each calibration input feeding the synthetic benchmark."""
+    fingerprint: dict[str, str] = {}
+    for filename in CALIBRATION_INPUT_FILES:
+        digest = hashlib.sha256()
+        with (main_path / filename).open("rb") as file:
+            for chunk in iter(lambda: file.read(1 << 20), b""):
+                digest.update(chunk)
+        fingerprint[filename] = digest.hexdigest()
+    return fingerprint
+
+
 def _benchmark_manifest(
     *,
     seed: int,
     trajectory_count: int,
     step_count: int,
     prob_grid: np.ndarray,
+    code_version: str,
+    input_fingerprint: dict[str, str],
 ) -> dict[str, object]:
     return {
         "seed": seed,
@@ -550,11 +586,37 @@ def _benchmark_manifest(
             "center": ERROR_CENTER,
             "corridor": "20th-80th percentile envelope including the mean",
         },
+        "code_version": code_version,
+        "input_fingerprint": input_fingerprint,
         "notes": (
             "SIB is implemented as NP initialization followed by Bayesian "
-            "refinement. No code version or input fingerprint is recorded."
+            "refinement."
         ),
     }
+
+
+def refresh_benchmark_manifest(path_to_main: str | Path) -> Path:
+    """Recompute code_version/input_fingerprint in an existing manifest.
+
+    Reuses seed/trajectory_count/step_count/p_values already recorded by a
+    prior run, so this never re-runs the (expensive) synthetic benchmark and
+    never touches any previously computed result.
+    """
+    main_path = Path(path_to_main)
+    manifest_path = main_path / "errors" / "synthetic_benchmark_manifest.json"
+    with manifest_path.open("r", encoding="utf-8") as file:
+        existing = json.load(file)
+
+    manifest = _benchmark_manifest(
+        seed=existing["seed"],
+        trajectory_count=existing["trajectory_count"],
+        step_count=existing["step_count"],
+        prob_grid=np.asarray(existing["p_values"]),
+        code_version=_compute_code_version(),
+        input_fingerprint=_compute_input_fingerprint(main_path),
+    )
+    _atomic_json_dump(manifest, manifest_path)
+    return manifest_path
 
 
 def _save_synthetic_k_est_summary(
@@ -639,6 +701,8 @@ def run(
             trajectory_count=trajectory_count,
             step_count=step_count,
             prob_grid=prob_grid,
+            code_version=_compute_code_version(),
+            input_fingerprint=_compute_input_fingerprint(main_path),
         ),
         errors_dir / "synthetic_benchmark_manifest.json",
     )
@@ -895,12 +959,25 @@ if __name__ == "__main__":
         action="store_true",
         help="Replace trajectory caches and analyzer checkpoints",
     )
+    parser.add_argument(
+        "--refresh-manifest-only",
+        action="store_true",
+        help=(
+            "Recompute code_version/input_fingerprint in the existing "
+            "synthetic_benchmark_manifest.json and exit, without "
+            "re-running the benchmark"
+        ),
+    )
     arguments = parser.parse_args()
 
-    run(
-        arguments.path,
-        trajectory_count=arguments.trajectory_count,
-        step_count=arguments.step_count,
-        seed=arguments.seed,
-        force_recompute=arguments.force_recompute,
-    )
+    if arguments.refresh_manifest_only:
+        refreshed_path = refresh_benchmark_manifest(arguments.path)
+        kprint(f"Refreshed {refreshed_path}")
+    else:
+        run(
+            arguments.path,
+            trajectory_count=arguments.trajectory_count,
+            step_count=arguments.step_count,
+            seed=arguments.seed,
+            force_recompute=arguments.force_recompute,
+        )

@@ -14,6 +14,8 @@ from scripts.sim_algo_check import (
     _atomic_savez,
     _benchmark_manifest,
     _checkpoint_metadata,
+    _compute_code_version,
+    _compute_input_fingerprint,
     _empty_checkpoint,
     _error_band,
     _figure_error_data,
@@ -21,6 +23,7 @@ from scripts.sim_algo_check import (
     _save_analyzer_checkpoint,
     _shared_error_axis_limits,
     estimate_trapping_probability,
+    refresh_benchmark_manifest,
     trajectory_seed,
 )
 
@@ -135,12 +138,14 @@ def test_checkpoint_migrates_k_est_without_rerunning_classification(
         assert json.loads(str(migrated_payload["metadata_json"])) == metadata
 
 
-def test_seed_and_figure_contract_are_saved_without_code_fingerprint() -> None:
+def test_seed_and_figure_contract_are_saved_with_code_fingerprint() -> None:
     manifest = _benchmark_manifest(
         seed=42,
         trajectory_count=100,
         step_count=3000,
         prob_grid=np.array([0.0, 0.5, 1.0]),
+        code_version="deadbeef",
+        input_fingerprint={"radiuses.npy": "abc123"},
     )
 
     assert manifest["seed"] == 42
@@ -154,8 +159,69 @@ def test_seed_and_figure_contract_are_saved_without_code_fingerprint() -> None:
     expected_corridor = "20th-80th percentile envelope including the mean"
     assert figure_8["corridor"] == expected_corridor
     assert figure_13["corridor"] == expected_corridor
-    assert "fingerprint" not in manifest
-    assert "version" not in manifest
+    assert manifest["code_version"] == "deadbeef"
+    assert manifest["input_fingerprint"] == {"radiuses.npy": "abc123"}
+    assert "not recorded" not in cast(str, manifest["notes"])
+
+
+def test_compute_input_fingerprint_hashes_each_calibration_file(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "pi_l_gamma_fitter.json").write_bytes(b"pi_l")
+    (tmp_path / "throat_lengths_weibull_fitter.json").write_bytes(b"throat")
+    (tmp_path / "radiuses.npy").write_bytes(b"radiuses")
+
+    fingerprint = _compute_input_fingerprint(tmp_path)
+
+    assert set(fingerprint) == {
+        "pi_l_gamma_fitter.json",
+        "throat_lengths_weibull_fitter.json",
+        "radiuses.npy",
+    }
+    assert all(len(value) == 64 for value in fingerprint.values())
+
+
+def test_compute_code_version_returns_the_current_commit_hash() -> None:
+    version = _compute_code_version()
+
+    assert len(version) == 40
+    assert all(character in "0123456789abcdef" for character in version)
+
+
+def test_refresh_benchmark_manifest_preserves_recorded_results(
+    tmp_path: Path,
+) -> None:
+    errors_dir = tmp_path / "errors"
+    errors_dir.mkdir()
+    original = _benchmark_manifest(
+        seed=42,
+        trajectory_count=100,
+        step_count=3000,
+        prob_grid=np.array([0.0, 0.5, 1.0]),
+        code_version="stale",
+        input_fingerprint={"radiuses.npy": "stale"},
+    )
+    manifest_path = errors_dir / "synthetic_benchmark_manifest.json"
+    manifest_path.write_text(json.dumps(original), encoding="utf-8")
+
+    (tmp_path / "pi_l_gamma_fitter.json").write_bytes(b"pi_l")
+    (tmp_path / "throat_lengths_weibull_fitter.json").write_bytes(b"throat")
+    (tmp_path / "radiuses.npy").write_bytes(b"radiuses")
+
+    refreshed_path = refresh_benchmark_manifest(tmp_path)
+
+    assert refreshed_path == manifest_path
+    with manifest_path.open(encoding="utf-8") as file:
+        refreshed = json.load(file)
+
+    assert refreshed["seed"] == original["seed"]
+    assert refreshed["trajectory_count"] == original["trajectory_count"]
+    assert refreshed["step_count"] == original["step_count"]
+    assert refreshed["p_values"] == original["p_values"]
+    assert refreshed["figure_8"] == original["figure_8"]
+    assert refreshed["figure_13"] == original["figure_13"]
+    assert refreshed["code_version"] != "stale"
+    assert refreshed["input_fingerprint"] != {"radiuses.npy": "stale"}
 
 
 def test_figures_share_dm_and_sib_data_statistics_and_colors() -> None:
