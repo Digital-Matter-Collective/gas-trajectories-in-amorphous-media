@@ -1,17 +1,17 @@
 cff-version: 1.2.0
 message: >-
-  If you use this software, please cite it using its concept DOI. If you also
-  use the accompanying research data, cite the dataset separately as described
-  in the README.
+  If you use this software, please cite this version using its version-specific
+  DOI. If you also use the accompanying research data, cite the dataset
+  separately as described in the README.
 type: software
 title: gas-trajectories-in-amorphous-media
 abstract: >-
   Trajectory analysis of gas molecules in kerogen pore structures: trapping-event
   classification (distance-matrix, Neyman-Pearson, Bayesian and hybrid analyzers),
   pore-network-model statistics, and the synthetic benchmarks used to validate them.
-version: 1.0.0
-date-released: "2026-09-04"
-doi: "10.5281/zenodo.22309111"
+version: 1.1.0
+date-released: "2026-09-22"
+doi: "10.5281/zenodo.22900852"
 authors:
   - family-names: Ananev
     given-names: Andrey
@@ -29,7 +29,7 @@ authors:
     given-names: Aleksey
     orcid: "https://orcid.org/0000-0002-6686-7243"
 repository-code: "https://github.com/Digital-Matter-Collective/gas-trajectories-in-amorphous-media"
-url: "https://doi.org/10.5281/zenodo.22309111"
+url: "https://doi.org/10.5281/zenodo.22900852"
 license: MIT
 
 # After the accompanying article is published, uncomment the block below and

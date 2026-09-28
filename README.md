@@ -8,9 +8,7 @@ and downstream pore-network statistics used in the accompanying research.
 The code and the accompanying research-data archive (molecular-dynamics
 trajectories and reference pore-network models, PNMs, for CH4/H2 in type-I
 kerogen at 300 K) are both published on Zenodo; see "Citation and license"
-below for their DOIs. A follow-up release with additional fixes is in
-preparation and will supersede the current release under the same concept
-DOIs once published.
+below for their concept DOIs and the exact records for release `v1.1.0`.
 
 ## Scientific scope
 
@@ -49,6 +47,12 @@ bundled DM threshold tables, and optional VTK visualization. Verify it with:
 python -m pytest -q
 gas-traj-dm-search --help
 ```
+
+On the reference workstation (Ubuntu x86-64, AMD Ryzen 7 5800H), a clean
+installation of this complete environment took 119 seconds on 28 September
+2026. The time includes dependency solving, downloads, extraction, and the
+editable package installation; allow additional time on a slower network or
+when the Conda package cache is empty.
 
 A regular pip installation is supported for development, but is not the
 reference environment for reproducing numerical results:
@@ -126,6 +130,9 @@ Expected output:
 points=100, edge_labels=99, trapped=85
 ```
 
+On the reference workstation, the first run through `conda run -n kerogen`
+took 3.64 seconds, including process and environment startup.
+
 ## Command-line workflow
 
 Installing the package provides these supported entry points:
@@ -185,10 +192,14 @@ an adapter example, not a bundled extractor. Another extractor may be used if
 its output conforms to the schema above, but it may produce numerically
 different networks.
 
-There is currently no public data download. The future publication archive
-will contain checksummed inputs and reference PNM outputs needed for exact
-downstream reproduction. Until then, data-dependent examples require a user's
-own compatible data.
+Exact downstream reproduction does not require access to that extractor. The
+published dataset record
+<https://doi.org/10.5281/zenodo.22899527> contains the authors' reference
+networks as `ch4_pnm.tar.gz` and `h2_pnm.tar.gz` (100 PNMs and 400
+Statoil-format files per gas), together with the input trajectories,
+intermediate data, classifier outputs, and derived summaries. Download only
+the per-gas archives needed for a particular workflow; extraction and command
+examples are given in [`docs/reproduction.md`](docs/reproduction.md).
 
 ## Outputs, runtime, and reproducibility
 
@@ -220,13 +231,18 @@ up. The reference workflow is CPU-based; no GPU is required.
 
 ## Citation and license
 
-If you use the software or its methods, cite it using the concept DOI in
-[`CITATION.cff`](CITATION.cff). This DOI represents all software versions and
-will continue to resolve after new releases are published:
+For reproducibility, cite the exact software version recorded in
+[`CITATION.cff`](CITATION.cff):
 
 > Ananev, A., Potapova, M., Vostroknutov, T., Kondratyuk, N., & Khlyupin, A.
-> (2026). *gas-trajectories-in-amorphous-media* (Version 1.0.0) [Computer software].
-> Zenodo. <https://doi.org/10.5281/zenodo.22309111>
+> (2026). *gas-trajectories-in-amorphous-media* (Version 1.1.0) [Computer software].
+> Zenodo. <https://doi.org/10.5281/zenodo.22900852>
+
+The concept DOI <https://doi.org/10.5281/zenodo.22309111> represents the
+software family and resolves to its latest published version. Use it when a
+version-independent link is intended; use the version DOI above when recording
+the exact code used for an analysis. For future releases, reserve a version DOI
+before publication or update `CITATION.cff` after Zenodo mints it.
 
 GitHub's **Cite this repository** menu reads `CITATION.cff` and can export
 this citation in APA and BibTeX formats. The software is distributed under
@@ -234,9 +250,11 @@ the [MIT License](LICENSE).
 
 Research datasets are not distributed by this repository and are not covered
 by the software license. If you use the accompanying molecular-dynamics or
-derived data, cite its Zenodo record separately in addition to the software:
-<https://doi.org/10.5281/zenodo.22309333>. Use the **Citation** panel on that
-record to export the dataset citation in the style required by the journal.
+derived data, cite the immutable dataset version used by this release and the
+manuscript: <https://doi.org/10.5281/zenodo.22899527>. Its concept DOI,
+<https://doi.org/10.5281/zenodo.22309333>, represents all dataset versions and
+resolves to the latest one. Use the **Citation** panel on the Zenodo record to
+export the dataset citation in the style required by the journal.
 
 When the accompanying article receives a DOI, add it to the commented
 `preferred-citation` template at the bottom of `CITATION.cff`. Use the bare

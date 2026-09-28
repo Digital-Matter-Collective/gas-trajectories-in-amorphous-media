@@ -6,11 +6,16 @@ deterministic commands from stages that still depend on manual rendering.
 
 Exact reproduction from a clean checkout requires the published data archive
 (molecular-dynamics trajectories, fitted pore-network distributions, and
-reference PNMs), available on Zenodo under a CC-BY-4.0 license — see the
-"Citation and license" section of the top-level README for its DOI. Extract
-the archive and verify it with `python -m scripts.build_data_release_manifest
-verify <extracted_dir>` before running the commands below against it; the
-manifest inside the archive records the missing inputs and checksums.
+reference PNMs), available under CC-BY-4.0 in Zenodo record
+[10.5281/zenodo.22899527](https://doi.org/10.5281/zenodo.22899527). The record
+contains separate archives for each gas and processing stage plus
+`data_manifest.json`. For a complete download, place all record files in one
+flat release directory and verify it before extraction with `python -m
+scripts.build_data_release_manifest verify <release_dir>`. This command
+checks the 26 files listed by the manifest and therefore intentionally reports
+omitted archives as missing. For a selective download, compare each downloaded
+archive's `sha256sum` with its entry in `data_manifest.json`. Extract verified
+archives into separate per-gas working directories as described below.
 
 **Library API vs. publication scripts.** `base/`, `processes/`, `utils/`, and
 `visualizer/` are the importable library: no CLI of their own, no filesystem
@@ -149,6 +154,34 @@ Generated structure and image filenames preserve the simulation step, time,
 bounding box, and resolution. Do not rename them: later stages recover metadata
 from those names.
 
+### Published archives and reference PNMs
+
+The Zenodo record is split into `<gas>_<stage>.tar.gz` files so that a user
+does not need to download the complete 17 GB release for one analysis. Each
+archive is extracted into the root of the corresponding gas directory. For
+example, the PNM-dependent CH4 workflow needs the reference PNMs and the
+small fitted-distribution/trajectory bundle:
+
+```bash
+export RELEASE_DIR="/path/to/downloaded-zenodo-record"
+export CH4_DIR="/path/to/ch4-dataset"
+mkdir -p "$CH4_DIR"
+
+tar -xzf "$RELEASE_DIR/ch4_pnm.tar.gz" -C "$CH4_DIR"
+tar -xzf "$RELEASE_DIR/ch4_misc.tar.gz" -C "$CH4_DIR"
+```
+
+Use `h2_pnm.tar.gz` and `h2_misc.tar.gz` in the same way for H2. The PNM
+archives each contain 100 networks as 400 Statoil files under `pnm/`; their
+filenames retain the simulation step, time, bounding box, and voxel
+resolution. The `misc` archives provide `trj.gro`, `radiuses.npy`,
+`pi_l_gamma_fitter.json`, `throat_lengths_weibull_fitter.json`, and their
+provenance manifests. Other stages can be restored independently from the
+matching archives, for example `ch4_traps.tar.gz`,
+`ch4_ks_stationarity.tar.gz`, `ch4_errors.tar.gz`, and
+`ch4_trapping-summary-output.tar.gz`. The archive inventory and checksums are
+given by the release README and `data_manifest.json`.
+
 ## 3. Trajectory and structure preparation
 
 Every installed `gas-traj-*` command below has an equivalent `python -m
@@ -248,11 +281,18 @@ run needs more RAM than it does.
 
 ## 4. Pore-network boundary
 
-The pore-network extractor used by the authors is not distributed. The local
-`scripts/pnm_extractor.py` module demonstrates its JSON adapter, but requires
-an external executable and is not a portable reproduction dependency. There is
-no installed console script for it (not registered in `pyproject.toml`); run
-it as a module, pointing at your own extractor binary and its JSON config:
+The pore-network extractor used by the authors is a separate, non-free program
+and is not distributed with this work. It is therefore outside the
+reproduction boundary. For exact paper results, use the published
+`ch4_pnm.tar.gz` and `h2_pnm.tar.gz` reference networks described in Section 2
+instead of regenerating them.
+
+The local `scripts/pnm_extractor.py` module only demonstrates the JSON adapter
+used to call an externally supplied executable; it is not the extractor and is
+not a portable reproduction dependency. There is no installed console script
+for it (it is not registered in `pyproject.toml`). Users who independently
+possess a compatible extractor may run the adapter as a module with their own
+binary and JSON config:
 
 ```bash
 python -m scripts.pnm_extractor \
@@ -281,8 +321,9 @@ lengths in metres, and converts them to nm. Keep `link2` in a released
 standard-format network even though it is not currently read.
 
 Different extractors can yield different networks. Exact downstream paper
-results therefore require the authors' reference PNM files, which are planned
-for the publication data archive.
+results therefore require the published reference PNM files from Zenodo record
+`10.5281/zenodo.22899527`; independently regenerated networks constitute a new
+input dataset and are not expected to reproduce the reported numbers exactly.
 
 ## 5. Fit distributions used by the simulator
 
@@ -784,26 +825,26 @@ each environment variable.
 
 | Artifact | Primary implementation | Reproduction status |
 | --- | --- | --- |
-| Figs. 1–2 | §10 (`external_scripts/`, `vis_struct_trajectory`, `vis_atoms_struct`, `vis_struct_pnm`, `vis_slice_struct`, `vis_struct_example`) | Manual rendering; requires PDB, MD, and reference PNM data |
-| Fig. 3 | §11 (`corrfunc_krg_mol_plotter`, `corrfunc_struct_plotter`) | Requires publication trajectories and explicit final recipe |
-| Fig. 4 | §10 (`inv_plot`, `vis_traject`) | Confirmed working; panel composition remains manual |
-| Fig. 5 | none | No current implementation. The previous example script (`examples/vis_collapsed_traps.py`) has been removed as redundant/unmaintained; collapsing trapping intervals for display is not implemented elsewhere |
-| Fig. 6 | image pipeline, external PNM extraction, `generate_pil_distr`, §11 (`distr_pnm_element_size_plotter`, `pil_plotter`) | Blocked on reference PNMs |
-| Fig. 7 | §10 (`simulate_trajectory`), VTK visualizer | Confirmed working; `--k`/`--p`/`--steps` produce the panel b–e variants; requires fitted distributions and manual panel composition |
-| Fig. 8 | `gas-traj-synthetic-benchmark` | Deterministic command and SVG output implemented |
-| Fig. 9 / Appendix | `gas-traj-trap-distributions`, §11 (`powerlaw_analysis`), §10 trajectory visualizers | Summary command implemented; data unavailable |
-| Fig. 10 | §10 (`simulate_trajectory`, visualizers) | Confirmed working; panel selection and composition remain manual |
-| Fig. 11 | §12 (`complexity_estimation`) | Confirmed working; timing protocol is not yet publication-ready |
-| Fig. 12 | `gas-traj-stationarity` | Deterministic summary implemented; PNM data unavailable |
-| Fig. 13 | `gas-traj-synthetic-benchmark` | Deterministic command and SVG output implemented |
-| Table IV | `gas-traj-dm-search`, `gas-traj-find-dm-params` | Deterministic, resumable CSV/JSON workflow implemented |
-| Table I | `gas-traj-synthetic-benchmark` | Deterministic CSV/JSON export implemented |
-| Table II | `gas-traj-trap-distributions` | CSV/JSON export implemented; data unavailable |
-| Table III | `gas-traj-stationarity` | CSV/JSON export implemented; PNM data unavailable |
+| Figs. 1–2 | §10 (`external_scripts/`, `vis_struct_trajectory`, `vis_atoms_struct`, `vis_struct_pnm`, `vis_slice_struct`, `vis_struct_example`) | Inputs, including reference PNMs, are published; rendering and panel composition remain manual |
+| Fig. 3 | §11 (`corrfunc_krg_mol_plotter`, `corrfunc_struct_plotter`) | Publication trajectories and derived CH4 outputs are published; final panel composition remains manual |
+| Fig. 4 | §10 (`inv_plot`, `vis_traject`) | Inputs are published and scripts work; panel composition remains manual |
+| Fig. 5 | none | Trapping classifications are published, but the exact visualization is not automated by the current release |
+| Fig. 6 | image pipeline, published reference PNMs, `generate_pil_distr`, §11 (`distr_pnm_element_size_plotter`, `pil_plotter`) | PNM inputs and generated distribution figures are published; regeneration starts from `<gas>_pnm.tar.gz` |
+| Fig. 7 | §10 (`simulate_trajectory`), VTK visualizer | Fitted distributions are published; `--k`/`--p`/`--steps` produce the panel b–e variants; panel composition remains manual |
+| Fig. 8 | `gas-traj-synthetic-benchmark` | Deterministic command, manifest, caches, and SVG output are published in `ch4_errors.tar.gz` and `ch4_figs.tar.gz` |
+| Fig. 9 / Appendix | `gas-traj-trap-distributions`, §11 (`powerlaw_analysis`), §10 trajectory visualizers | Input trajectories, fitted distributions, trap sequences, summaries, and generated SVGs are published |
+| Fig. 10 | §10 (`simulate_trajectory`, visualizers) | Required distributions are published; panel selection and composition remain manual |
+| Fig. 11 | §12 (`complexity_estimation`) | Script plus `complexity.pdf` and `complexity.json` are published; timings remain hardware-dependent |
+| Fig. 12 | `gas-traj-stationarity` | CH4 reference PNMs and complete stationarity outputs are published; H2 stationarity was intentionally not performed |
+| Fig. 13 | `gas-traj-synthetic-benchmark` | Deterministic command, manifest, caches, and SVG output are published in `ch4_errors.tar.gz` and `ch4_figs.tar.gz` |
+| Table IV | `gas-traj-dm-search`, `gas-traj-find-dm-params` | Deterministic search checkpoints and CSV/JSON outputs are published in `ch4_errors.tar.gz` |
+| Table I | `gas-traj-synthetic-benchmark` | Deterministic CSV/JSON outputs and their manifest are published in `ch4_errors.tar.gz` |
+| Table II | `gas-traj-trap-distributions` | Per-gas inputs, trap sequences, and `trapping_summary.csv`/`.json` are published |
+| Table III | `gas-traj-stationarity` | CH4 PNM inputs and `stationarity_summary.csv`/`.json` are published in `ch4_pnm.tar.gz` and `ch4_ks_stationarity.tar.gz` |
 
-This table is deliberately explicit about incomplete stages. A future
-publication release should replace every “manual” or “unavailable” entry with
-a versioned input, exact command, parameter file, and expected output checksum.
+The versioned numerical inputs and outputs are public. Entries marked manual
+identify figure-rendering or panel-composition steps that are not automated by
+the current code release; they are not missing PNM or trajectory data.
 
 ## 14. Result preservation and manifests
 
