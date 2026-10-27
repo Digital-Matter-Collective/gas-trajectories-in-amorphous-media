@@ -11,7 +11,7 @@ from typing import Callable, List, Tuple, cast
 import numpy as np
 import numpy.typing as npt
 from matplotlib import pyplot as plt
-from matplotlib.ticker import FormatStrFormatter
+from matplotlib.ticker import FormatStrFormatter, MaxNLocator
 
 from base.trajectory import Trajectory
 from utils.cache_manifest import check_cache, write_manifest
@@ -108,7 +108,10 @@ def plot_corrfunc_and_md(
     )
     ax1.set_xlabel(r"Time delay, $\mu$s", fontsize=20)
 
+    ax1.set_ylim(0.49, 0.69)
     ax1.yaxis.set_major_formatter(FormatStrFormatter("%.2f"))
+    ax1.yaxis.set_major_locator(MaxNLocator(nbins=4))
+    
     ax1.tick_params(axis="both", labelsize=16)
     ax1.tick_params(axis="y", labelcolor=color_ct)
 

@@ -228,7 +228,7 @@ def plot_trapping_on_axis(
             ax.annotate(
                 rf"$\sim t^{{{slope:.2f}}}$",
                 xy=(x_txt, y_txt),
-                xytext=(15, -75),  # <-- сдвиг: влево и чуть вверх
+                xytext=(-35, 0),  # <-- сдвиг: влево и чуть вверх
                 textcoords="offset points",
                 color=color,
                 fontsize=30,
@@ -251,7 +251,7 @@ def plot_trapping_on_axis(
             ax.annotate(
                 rf"$\sim t^{{{slope:.2f}}}$",
                 xy=(x_txt, y_txt),
-                xytext=(50, -20),  # <-- сдвиг: вправо и чуть вверх
+                xytext=(30, 0),  # <-- сдвиг: вправо и чуть вверх
                 textcoords="offset points",
                 color=color,
                 fontsize=30,

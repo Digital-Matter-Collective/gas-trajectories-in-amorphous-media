@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Tuple
 import numpy as np
 import numpy.typing as npt
 
-from base.boundingbox import BoundingBox, KerogenBox
+from base.boundingbox import BoundingBox, KerogenBox, Range
 from base.kerogendata import AtomData
 from utils.utils import kprint  # noqa: F401 (re-exported for callers)
 
@@ -387,11 +387,20 @@ def extract_settings(
     from processes.segmentation import Segmentator
 
     num, time_ps, atoms, size = structure
-    bbox = Segmentator.cut_cell(size, dev)
+    # bbox = Segmentator.cut_cell(size, dev)
+    fsize = tuple(s / dev for s in size)
+    resid = tuple((s - fs)*0.5 for s, fs in zip(size, fsize))
+
+    bbox = KerogenBox(
+        Range(resid[0], resid[0] + fsize[0]),
+        Range(resid[1], resid[1] + fsize[1]),
+        Range(resid[2], resid[2] + fsize[2]),
+    )
     resolution = min(bbox.size()) / ref_size
     img_size = Segmentator.calc_image_size(
         bbox.size(), reference_size=ref_size, by_min=True
     )
+    kprint(f"Image size: {img_size}, resolution: {resolution}, bbox: {bbox}")
     return num, time_ps, bbox, resolution, img_size
 
 
